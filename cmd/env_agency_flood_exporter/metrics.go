@@ -68,7 +68,7 @@ func (m *Metrics) ToPrometheus() []byte {
 	// Typical highs
 	fst = true
 	for _, r := range m.m {
-		if r.TypicalHigh != nil {
+		if r.TypicalHigh(fudges) != nil {
 			if fst {
 				fmt.Fprintf(&b, "# HELP %s_river_typical_high The highest level expected under normal circumstances.\n", pfx)
 				fmt.Fprintf(&b, "# TYPE %s_river_typical_high gauge\n", pfx)
@@ -77,7 +77,7 @@ func (m *Metrics) ToPrometheus() []byte {
 
 			fmt.Fprintf(&b, "%s_river_typical_high", pfx)
 			writeDimensions(r)
-			fmt.Fprintf(&b, " %v %d\n", *r.TypicalHigh, r.When.UnixMilli())
+			fmt.Fprintf(&b, " %v %d\n", *r.TypicalHigh(fudges), r.When.UnixMilli())
 		}
 	}
 
@@ -86,7 +86,7 @@ func (m *Metrics) ToPrometheus() []byte {
 	// Typical lows
 	fst = true
 	for _, r := range m.m {
-		if r.TypicalLow != nil {
+		if r.TypicalLow(fudges) != nil {
 			if fst {
 				fmt.Fprintf(&b, "# HELP %s_river_typical_low The lowest level expected under normal circumstances.\n", pfx)
 				fmt.Fprintf(&b, "# TYPE %s_river_typical_low gauge\n", pfx)
@@ -95,7 +95,7 @@ func (m *Metrics) ToPrometheus() []byte {
 
 			fmt.Fprintf(&b, "%s_river_typical_low", pfx)
 			writeDimensions(r)
-			fmt.Fprintf(&b, " %v %d\n", *r.TypicalLow, r.When.UnixMilli())
+			fmt.Fprintf(&b, " %v %d\n", *r.TypicalLow(fudges), r.When.UnixMilli())
 		}
 	}
 

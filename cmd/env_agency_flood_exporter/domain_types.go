@@ -19,9 +19,28 @@ type RiverLevel struct {
 	RiverName    string
 	Level        float64
 
-	TypicalHigh *float64
-	TypicalLow  *float64
+	typicalHigh *float64
+	typicalLow  *float64
 }
+
+func (r RiverLevel) TypicalHigh(fudges Fudges) *float64 {
+	_, hi, ok := fudges.Get(r.StationID)
+	if ok {
+		return &hi
+	}
+	
+	return r.typicalHigh
+}
+
+func (r RiverLevel) TypicalLow(fudges Fudges) *float64 {
+	lo, _, ok := fudges.Get(r.StationID)
+	if ok {
+		return &lo
+	}
+	
+	return r.typicalLow
+}
+
 
 var trimLabelPrefix string
 
@@ -63,8 +82,8 @@ func riverLevelFromStation(s *station) RiverLevel {
 
 	// Do we have our bonus information?
 	if s.Items.StageScale != nil {
-		r.TypicalHigh = s.Items.StageScale.TypicalRangeHigh
-		r.TypicalLow = s.Items.StageScale.TypicalRangeLow
+		r.typicalHigh = s.Items.StageScale.TypicalRangeHigh
+		r.typicalLow = s.Items.StageScale.TypicalRangeLow
 	}
 
 	return r
