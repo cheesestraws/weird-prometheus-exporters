@@ -14,6 +14,8 @@ import (
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/fn"
 )
 
+var metrics Metrics
+
 func mangleParams() ([]int, error) {
 	sp := flag.String("stations", "43160,1754,43159,43165,43159", "comma-separated list of station IDs; see https://environment.data.gov.uk/flood-monitoring/id/stations/")
 	flag.Parse()
@@ -41,7 +43,6 @@ func runloop(cli *http.Client, sleepTime time.Duration, stationIDs []int) {
 		stations, err := fn.Errmap(stationIDs, func(stationID int) (*station, error) {
 			return fetch(cli, stationID)
 		})
-	
 		if err != nil {
 			// Don't propagate the error upwards, print it and carry on
 			log.Printf("err: %v", err)
@@ -49,7 +50,8 @@ func runloop(cli *http.Client, sleepTime time.Duration, stationIDs []int) {
 		}
 	
 		levels := fn.Map(stations, riverLevelFromStation)
-		fmt.Printf("%+v", levels)
+		metrics.Import(levels)
+		fmt.Printf("%s", metrics.ToPrometheus())
 	
 		time.Sleep(sleepTime)
 	}
