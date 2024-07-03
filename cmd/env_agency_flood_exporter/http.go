@@ -6,6 +6,7 @@ import (
 	"io"
 	"fmt"
 	"time"
+	"log"
 )
 
 func makeHTTPClient() *http.Client {
@@ -34,4 +35,18 @@ func fetch(cli *http.Client, stationID int) (*station, error) {
 	}
 	
 	return &sta, nil
+}
+
+func serve(addr string, stationIDs []int, m *Metrics) {
+	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write(m.ToPrometheus())
+	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintf(w, "polling stations %v", stationIDs)
+	})
+	
+	log.Fatal(http.ListenAndServe(addr, nil))
 }

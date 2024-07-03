@@ -66,5 +66,7 @@ func main() {
 	}
 
 	client := makeHTTPClient()
-	runloop(client, 10 * time.Minute, stations)
+	go runloop(client, 10 * time.Minute, stations)
+	
+	serve(":8080", stations, &metrics)
 }
