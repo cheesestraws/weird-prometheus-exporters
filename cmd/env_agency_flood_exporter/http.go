@@ -14,25 +14,24 @@ func makeHTTPClient() *http.Client {
 	}
 }
 
-func fetch(cli *http.Client, stationID int) error {
+func fetch(cli *http.Client, stationID int) (*station, error) {
 	url := fmt.Sprintf("https://environment.data.gov.uk/flood-monitoring/id/stations/%d", stationID)
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var sta station
 	err = json.Unmarshal(body, &sta)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	
-	fmt.Printf("%+v", riverLevelFromStation(&sta))
-	return nil
+	return &sta, nil
 }
