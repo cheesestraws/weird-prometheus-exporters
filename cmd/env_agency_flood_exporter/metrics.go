@@ -1,14 +1,14 @@
 package main
 
 import (
-	"sync"
 	"bytes"
 	"fmt"
+	"sync"
 )
 
 type Metrics struct {
 	l sync.RWMutex
-	
+
 	m map[string]RiverLevel
 }
 
@@ -23,7 +23,7 @@ func (m *Metrics) set(r RiverLevel) {
 func (m *Metrics) Import(rs []RiverLevel) {
 	m.l.Lock()
 	defer m.l.Unlock()
-	
+
 	for _, r := range rs {
 		if r.Valid {
 			m.set(r)
@@ -31,26 +31,25 @@ func (m *Metrics) Import(rs []RiverLevel) {
 	}
 }
 
-
 func (m *Metrics) ToPrometheus() []byte {
 	m.l.RLock()
 	defer m.l.RUnlock()
-	
+
 	var b bytes.Buffer
 	const pfx = "environment_data_gov_uk_flood_monitoring"
-	
+
 	writeDimensions := func(r RiverLevel) {
 		fmt.Fprintf(&b, "{station_id=%q,station_label=%q", r.StationID, r.StationLabel)
-		
+
 		if r.RiverName != "" {
 			fmt.Fprintf(&b, ",river_name=%q", r.RiverName)
 		}
-		
+
 		fmt.Fprintf(&b, "}")
 	}
-	
+
 	var fst bool
-	
+
 	// Do the level metrics
 	fst = true
 	for _, r := range m.m {
@@ -63,9 +62,9 @@ func (m *Metrics) ToPrometheus() []byte {
 		writeDimensions(r)
 		fmt.Fprintf(&b, " %v %d\n", r.Level, r.When.Unix())
 	}
-	
+
 	fmt.Fprintf(&b, "\n\n")
-	
+
 	// Typical highs
 	fst = true
 	for _, r := range m.m {
@@ -81,9 +80,9 @@ func (m *Metrics) ToPrometheus() []byte {
 			fmt.Fprintf(&b, " %v %d\n", *r.TypicalHigh, r.When.Unix())
 		}
 	}
-	
+
 	fmt.Fprintf(&b, "\n\n")
-	
+
 	// Typical lows
 	fst = true
 	for _, r := range m.m {
@@ -93,14 +92,12 @@ func (m *Metrics) ToPrometheus() []byte {
 				fmt.Fprintf(&b, "# TYPE %s_river_typical_low gauge\n", pfx)
 				fst = false
 			}
-		
+
 			fmt.Fprintf(&b, "%s_river_typical_low", pfx)
 			writeDimensions(r)
 			fmt.Fprintf(&b, " %v %d\n", *r.TypicalLow, r.When.Unix())
 		}
 	}
 
-
-	
 	return b.Bytes()
 }

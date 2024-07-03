@@ -5,12 +5,13 @@ package main
 
 import (
 	"encoding/json"
-	"time"
 	"fmt"
+	"time"
 )
 
 // Deal with broken timestamps that are missing time zone
 type timestamp time.Time
+
 func (t *timestamp) UnmarshalJSON(bs []byte) error {
 	// This is a bodge.  Thank goodness we're hangin' around near
 	// the Greenwich meridian.
@@ -25,7 +26,7 @@ func (t *timestamp) UnmarshalJSON(bs []byte) error {
 		*t = timestamp(tm)
 		return nil
 	}
-	
+
 	// Let's try parsing it with a forced zero time zone
 	timeStr = timeStr + "Z"
 	tm, err2 := time.Parse(time.RFC3339, timeStr)
@@ -33,7 +34,7 @@ func (t *timestamp) UnmarshalJSON(bs []byte) error {
 		*t = timestamp(tm)
 		return nil
 	}
-	
+
 	return err1
 }
 
@@ -49,26 +50,26 @@ type station struct {
 }
 
 type stationItems struct {
-	Label string `json:"label"`
-	Notation string `json:"notation"`
-	RiverName string `json:"riverName"`
-	StageScale *scale `json:"stageScale"`
-	Measures measures `json:"measures"`
+	Label      string   `json:"label"`
+	Notation   string   `json:"notation"`
+	RiverName  string   `json:"riverName"`
+	StageScale *scale   `json:"stageScale"`
+	Measures   measures `json:"measures"`
 }
 
 type scale struct {
-	HighestRecent reading `json:"highestRecent"`
-	MaxOnRecord reading `json:"maxOnRecord"`
-	MinOnRecord reading `json:"minOnRecord"`
-	ScaleMax float64 `json:"scaleMax"`
+	HighestRecent    reading  `json:"highestRecent"`
+	MaxOnRecord      reading  `json:"maxOnRecord"`
+	MinOnRecord      reading  `json:"minOnRecord"`
+	ScaleMax         float64  `json:"scaleMax"`
 	TypicalRangeHigh *float64 `json:"typicalRangeHigh"`
-	TypicalRangeLow *float64 `json:"typicalRangeLow"`
+	TypicalRangeLow  *float64 `json:"typicalRangeLow"`
 }
 
 type readingFields struct {
-	Valid bool
+	Valid     bool
 	Timestamp *timestamp `json:"dateTime"`
-	Value float64 `json:"value"`
+	Value     float64    `json:"value"`
 }
 
 type reading struct {
@@ -86,13 +87,13 @@ func (r *reading) UnmarshalJSON(bs []byte) error {
 		}}
 		return nil
 	}
-	
+
 	// not a string, let's be responsible
 	err = json.Unmarshal(bs, &r.readingFields)
 	if err != nil {
 		return err
 	}
-	
+
 	r.readingFields.Valid = true
 	return nil
 }
@@ -105,10 +106,10 @@ func (r *reading) String() string {
 }
 
 type measure struct {
-	Parameter string `json:"parameter"`
-	Qualifier string `json:"qualifier"`
+	Parameter     string  `json:"parameter"`
+	Qualifier     string  `json:"qualifier"`
 	LatestReading reading `json:"latestReading"`
-	UnitName string `json:"unitName"`
+	UnitName      string  `json:"unitName"`
 }
 
 type measures []measure
@@ -121,17 +122,17 @@ func (ms *measures) UnmarshalJSON(bs []byte) error {
 		// yeah we have been given only a single measure
 		// and that not wrapped in an array.
 		// Ho hum.
-		
+
 		*ms = measures{m}
 		return nil
 	}
-	
+
 	var mss []measure
 	err = json.Unmarshal(bs, &mss)
 	if err != nil {
 		return err
 	}
-	
+
 	*ms = mss
 	return nil
 }
@@ -140,6 +141,6 @@ func (ms *measures) String() string {
 	if ms == nil {
 		return "nil"
 	}
-	
+
 	return fmt.Sprintf("%+v", *ms)
 }

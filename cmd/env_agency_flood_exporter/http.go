@@ -1,12 +1,12 @@
 package main
 
 import (
-	"net/http"
 	"encoding/json"
-	"io"
 	"fmt"
-	"time"
+	"io"
 	"log"
+	"net/http"
+	"time"
 )
 
 func makeHTTPClient() *http.Client {
@@ -21,7 +21,7 @@ func fetch(cli *http.Client, stationID int) (*station, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -33,7 +33,7 @@ func fetch(cli *http.Client, stationID int) (*station, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &sta, nil
 }
 
@@ -47,8 +47,8 @@ func serve(addr string, stationIDs []int, m *Metrics) {
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "polling stations %v", stationIDs)
 	})
-	
+
 	log.Printf("listening on %s", addr)
-	
+
 	log.Fatal(http.ListenAndServe(addr, nil))
 }

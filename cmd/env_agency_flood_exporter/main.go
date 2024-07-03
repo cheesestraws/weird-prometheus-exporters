@@ -1,16 +1,16 @@
 package main
 
 import (
-	"os"
 	"errors"
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
 	"strconv"
 	"strings"
-	"net/http"
-	"log"
 	"time"
-	
+
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/fn"
 )
 
@@ -50,14 +50,13 @@ func runloop(cli *http.Client, sleepTime time.Duration, stationIDs []int) {
 			log.Printf("err: %v", err)
 			break
 		}
-	
+
 		levels := fn.Map(stations, riverLevelFromStation)
 		metrics.Import(levels)
-	
+
 		time.Sleep(sleepTime)
 	}
 }
-
 
 func main() {
 	stations, addr, err := mangleParams()
@@ -67,7 +66,7 @@ func main() {
 	}
 
 	client := makeHTTPClient()
-	go runloop(client, 10 * time.Minute, stations)
-	
+	go runloop(client, 10*time.Minute, stations)
+
 	serve(addr, stations, &metrics)
 }
