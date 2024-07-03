@@ -48,5 +48,7 @@ func serve(addr string, stationIDs []int, m *Metrics) {
 		fmt.Fprintf(w, "polling stations %v", stationIDs)
 	})
 	
+	log.Printf("listening on %s", addr)
+	
 	log.Fatal(http.ListenAndServe(addr, nil))
 }

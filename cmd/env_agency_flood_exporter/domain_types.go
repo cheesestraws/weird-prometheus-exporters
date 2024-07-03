@@ -5,6 +5,7 @@ package main
 
 import (
 	"time"
+	"strings"
 	
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/fn"
 )
@@ -22,6 +23,8 @@ type RiverLevel struct {
 	TypicalLow *float64
 }
 
+var trimLabelPrefix string
+
 func riverLevelFromStation(s *station) RiverLevel {
 	var r RiverLevel
 	
@@ -30,7 +33,12 @@ func riverLevelFromStation(s *station) RiverLevel {
 	}
 	
 	r.StationID = s.Items.Notation
-	r.StationLabel = s.Items.Label
+	
+	l := strings.ToLower(s.Items.Label)
+	trimpfx := strings.ToLower(trimLabelPrefix)
+	l = strings.TrimPrefix(l, trimpfx)
+	
+	r.StationLabel = strings.Title(l)
 	r.RiverName = s.Items.RiverName
 	
 	// Now, do we have a level measurement?
