@@ -60,7 +60,7 @@ func (m *Metrics) ToPrometheus() []byte {
 		}
 		fmt.Fprintf(&b, "%s_river_level", pfx)
 		writeDimensions(r)
-		fmt.Fprintf(&b, " %v %d\n", r.Level, r.When.Unix())
+		fmt.Fprintf(&b, " %v %d\n", r.Level, r.When.UnixMilli())
 	}
 
 	fmt.Fprintf(&b, "\n\n")
@@ -77,7 +77,7 @@ func (m *Metrics) ToPrometheus() []byte {
 
 			fmt.Fprintf(&b, "%s_river_typical_high", pfx)
 			writeDimensions(r)
-			fmt.Fprintf(&b, " %v %d\n", *r.TypicalHigh, r.When.Unix())
+			fmt.Fprintf(&b, " %v %d\n", *r.TypicalHigh, r.When.UnixMilli())
 		}
 	}
 
@@ -95,7 +95,7 @@ func (m *Metrics) ToPrometheus() []byte {
 
 			fmt.Fprintf(&b, "%s_river_typical_low", pfx)
 			writeDimensions(r)
-			fmt.Fprintf(&b, " %v %d\n", *r.TypicalLow, r.When.Unix())
+			fmt.Fprintf(&b, " %v %d\n", *r.TypicalLow, r.When.UnixMilli())
 		}
 	}
 
