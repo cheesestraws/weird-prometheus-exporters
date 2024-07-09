@@ -1,12 +1,30 @@
 package main
 
 import (
-	"fmt"
+	"sync"
+	"log"
 )
 
-func main() {
+var state struct {
+	l sync.RWMutex
+	stuff []byte
+}
+
+func doFetchState() {
 	ns, err := QueryNetworkState()
-	fmt.Printf("err: %v\n", err)
-	fmt.Printf("ns: %+v\n", *ns)
-	fmt.Printf("prom: %s\n", ns.ToPrometheus())
+	if err != nil {
+		log.Printf("%v", err)
+	}
+	
+	bs := ns.ToPrometheus()
+	state.l.Lock()
+	state.stuff=bs
+	state.l.Unlock()
+}
+
+func main() {
+	log.Printf("initial state fetch...")
+	doFetchState()
+	
+	log.Printf("%s", state.stuff)
 }
