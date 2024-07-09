@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os/exec"
 	"regexp"
+	"fmt"
 	"strings"
 )
 
@@ -32,7 +33,7 @@ func (c cliQuerier) GetZones() ([]string, error) {
 var spaces *regexp.Regexp = regexp.MustCompile("\\s+")
 
 func (c cliQuerier) NBPLookup(pattern string) (map[string]string, error) {
-	output, err := exec.Command("getzones").Output()
+	output, err := exec.Command("nbplkup").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func (c cliQuerier) NBPLookup(pattern string) (map[string]string, error) {
 	for _, l := range lines {
 		ll := strings.TrimSpace(l)
 		flds := spaces.Split(ll, -1)
-
+		
 		if len(flds) != 2 {
 			return nil, errors.New("invalid formatting from nmblkup")
 		}
