@@ -43,6 +43,9 @@ func (c cliQuerier) NBPLookup(pattern string) (map[string]string, error) {
 
 	for _, l := range lines {
 		ll := strings.TrimSpace(l)
+		if ll == "" {
+			continue
+		}
 		flds := spaces.Split(ll, -1)
 		
 		if len(flds) != 2 {
