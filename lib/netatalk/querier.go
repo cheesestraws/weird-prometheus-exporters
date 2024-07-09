@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os/exec"
 	"regexp"
-	"fmt"
 	"strings"
 )
 

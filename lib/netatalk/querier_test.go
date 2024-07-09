@@ -39,8 +39,11 @@ func TestCLIQuerier(t *testing.T) {
 				t.Errorf("NBPLookup returned err: %v", err)
 				return
 			}
+	
+			for k, v := range m {
+				t.Logf("    %s => %s", k, v)
+			}
 
-			t.Logf("%+v", m)
 		}
 	})
 }
