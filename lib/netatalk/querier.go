@@ -29,7 +29,7 @@ func (c cliQuerier) GetZones() ([]string, error) {
 	return strings.Split(outstr, "\n"), nil
 }
 
-var spaces *regexp.Regexp = regexp.MustCompile("\\s+")
+var spaces *regexp.Regexp = regexp.MustCompile("\\s\\s+")
 
 func (c cliQuerier) NBPLookup(pattern string) (map[string]string, error) {
 	output, err := exec.Command("nbplkup", pattern).Output()
