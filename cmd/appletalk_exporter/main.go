@@ -3,6 +3,8 @@ package main
 import (
 	"sync"
 	"log"
+	"time"
+	"net/http"
 )
 
 var state struct {
@@ -22,9 +24,42 @@ func doFetchState() {
 	state.l.Unlock()
 }
 
+func fetch_and_update_forever() {
+	for {
+		doFetchState()
+		time.Sleep(30 * time.Second)
+	}
+}
+
+func serve(addr string) {
+	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		
+		var bs []byte
+		state.l.RLock()
+		bs = state.stuff
+		state.l.RUnlock()
+		
+		w.Write(bs)
+	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintf(w, "metrics at /metrics")
+	})
+
+	log.Printf("listening on %s", addr)
+
+	log.Fatal(http.ListenAndServe(addr, nil))
+}
+
+
 func main() {
-	log.Printf("initial state fetch...")
-	doFetchState()
+	addr := flag.String("addr", ":9402", "address to listen on")
+	flag.Parse()	
+		
+	go fetch_and_update_forever()
+	serve(*addr)
 	
-	log.Printf("%s", state.stuff)
+	
 }
