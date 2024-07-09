@@ -1,14 +1,16 @@
 package main
 
 import (
-	"sync"
+	"flag"
+	"fmt"
 	"log"
-	"time"
 	"net/http"
+	"sync"
+	"time"
 )
 
 var state struct {
-	l sync.RWMutex
+	l     sync.RWMutex
 	stuff []byte
 }
 
@@ -17,10 +19,10 @@ func doFetchState() {
 	if err != nil {
 		log.Printf("%v", err)
 	}
-	
+
 	bs := ns.ToPrometheus()
 	state.l.Lock()
-	state.stuff=bs
+	state.stuff = bs
 	state.l.Unlock()
 }
 
@@ -34,12 +36,12 @@ func fetch_and_update_forever() {
 func serve(addr string) {
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
-		
+
 		var bs []byte
 		state.l.RLock()
 		bs = state.stuff
 		state.l.RUnlock()
-		
+
 		w.Write(bs)
 	})
 
@@ -53,13 +55,11 @@ func serve(addr string) {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-
 func main() {
 	addr := flag.String("addr", ":9402", "address to listen on")
-	flag.Parse()	
-		
+	flag.Parse()
+
 	go fetch_and_update_forever()
 	serve(*addr)
-	
-	
+
 }
