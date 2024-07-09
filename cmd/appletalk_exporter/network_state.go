@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"bytes"
 
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/fn"
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/netatalk"
@@ -78,5 +79,43 @@ func QueryNetworkState() (*NetworkState, error) {
 	}
 	
 	return ParseNetworkState(zs, zentities), nil
+}
+
+func (ns *NetworkState) ToPrometheus() []byte {
+	bs := &bytes.Buffer{}
+	
+	help := func(metric string, help string) {
+		fmt.Fprintf(bs, "# HELP %s %s\n", metric, help)
+	}
+	
+	mtype := func(metric string, t string) {
+		fmt.Fprintf(bs, "# TYPE %s %s\n", metric, help)
+	}
+	
+	val := func(metric string, i int) {
+		fmt.Fprintf(bs, "%s %d\n", metric, i)
+	}
+
+	// QueryError
+	help("appletalk_query_error", "NBP failed while looking up network state")
+	mtype("appletalk_query_error", "gauge")
+	
+	var qe int 
+	if ns.QueryError {
+		qe = 1
+	}
+	
+	val("appletalk_query_error", qe)
+	
+	// Zones
+	help("appletalk_zone", "AppleTalk zones seen")
+	mtype("appletalk_zone", "gauge")
+
+	for _, z := range ns.Zones {
+		m := fmt.Sprintf("appletalk_zone{zone=%q}", z)
+		val(m, 1)		
+	}
+	
+	return bs.Bytes()
 }
 
