@@ -22,6 +22,11 @@ func StringToEntity(s string) NBPEntity {
 	return NBPEntity{o, t, z}
 }
 
+func (n NBPEntity) AsLabels() string {
+	return fmt.Sprintf("object=%q,type=%q,zone=%q",
+		n.Object, n.Type, n.Zone)
+}
+
 type NetworkState struct {
 	QueryError bool
 	
@@ -89,7 +94,7 @@ func (ns *NetworkState) ToPrometheus() []byte {
 	}
 	
 	mtype := func(metric string, t string) {
-		fmt.Fprintf(bs, "# TYPE %s %s\n", metric, help)
+		fmt.Fprintf(bs, "# TYPE %s %s\n", metric, t)
 	}
 	
 	val := func(metric string, i int) {
@@ -110,10 +115,33 @@ func (ns *NetworkState) ToPrometheus() []byte {
 	// Zones
 	help("appletalk_zone", "AppleTalk zones seen")
 	mtype("appletalk_zone", "gauge")
-
 	for _, z := range ns.Zones {
 		m := fmt.Sprintf("appletalk_zone{zone=%q}", z)
 		val(m, 1)		
+	}
+	
+	// Apple Routers
+	help("appletalk_zone_applerouters", "number of Apple routers seen")
+	mtype("appletalk_zone_applerouters", "gauge")
+	for _, z := range ns.Zones {
+		m := fmt.Sprintf("appletalk_zone_applerouters{zone=%q}", z)
+		val(m, ns.ZoneAppleRouters[z])
+	}
+	
+	// Entity count
+	help("appletalk_zone_entity_count", "number of entities in zone")
+	mtype("appletalk_zone_entity_count", "gauge")
+	for _, z := range ns.Zones {
+		m := fmt.Sprintf("appletalk_zone_entity_count{zone=%q}", z)
+		val(m, ns.ZoneEntityCount[z])
+	}
+
+	// Entities
+	help("appletalk_nbp_entity", "nbp entities")
+	mtype("appletalk_nbp_entity", "gauge")
+	for _, e := range ns.NBPEntities {
+		m := fmt.Sprintf("appletalk_nbp_entity{%s}", e.AsLabels())
+		val(m, 1)
 	}
 	
 	return bs.Bytes()
