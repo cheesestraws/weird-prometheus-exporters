@@ -57,12 +57,12 @@ func LocationLineupToServices(ll rtt.RTTLocationLineup, date time.Time) WrappedS
 			log.Printf("Realtime departure time parse error: %v", err)
 			valid = false
 		}
-		
+
 		lateness := realtimeDeparture.Sub(gbttDeparture)
 		// If we're ludicrously early, it's more likely that we're slightly late
-		if lateness <= -12 * time.Hour {
+		if lateness <= -12*time.Hour {
 			realtimeDeparture = realtimeDeparture.Add(24 * time.Hour)
-			lateness = lateness + 12 * time.Hour
+			lateness = lateness + 12*time.Hour
 		}
 
 		return WrappedService{
@@ -75,5 +75,3 @@ func LocationLineupToServices(ll rtt.RTTLocationLineup, date time.Time) WrappedS
 		}
 	}))
 }
-
-

@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"time"
 	"errors"
+	"time"
 
 	rtt "github.com/cheesestraws/gortt"
 
@@ -22,11 +22,11 @@ func (f *Fetch) Do(ctx context.Context, cli *rtt.Client) (WrappedServices, error
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if ll == nil {
 		return nil, errors.New("silently got nil lineup; probably a bug")
 	}
-	
+
 	return LocationLineupToServices(*ll, f.Date), nil
 }
 
@@ -80,9 +80,9 @@ func (fs Fetches) Do(ctx context.Context, cli *rtt.Client) (WrappedServices, err
 		if err != nil {
 			return ss, err
 		}
-		
+
 		ss = append(ss, ws...)
 	}
-	
+
 	return ss, nil
 }

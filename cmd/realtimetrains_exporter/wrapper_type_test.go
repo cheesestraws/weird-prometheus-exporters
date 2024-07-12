@@ -13,12 +13,11 @@ func TestLocationLineupToServices(t *testing.T) {
 		d, _ := time.Parse("2006-01-02", s)
 		return d
 	}
-	
+
 	sdatetime := func(s string) time.Time {
 		d, _ := time.Parse("2006-01-02 15:04:05", s)
 		return d
 	}
-
 
 	d := sdate("2023-04-05")
 	ll := rtt.RTTLocationLineup{
@@ -44,20 +43,18 @@ func TestLocationLineupToServices(t *testing.T) {
 					RealtimeDeparture:   "0015",
 				},
 			},
-
 		},
 	}
 
 	ws := LocationLineupToServices(ll, d)
 	expected := WrappedServices{
 		{
-			Valid:       true,
-			RequestDate: d,
-			GBTTDeparture: sdatetime("2023-04-05 01:15:00"),
+			Valid:             true,
+			RequestDate:       d,
+			GBTTDeparture:     sdatetime("2023-04-05 01:15:00"),
 			RealtimeDeparture: sdatetime("2023-04-05 01:20:00"),
-			Lateness: 5 * time.Minute,
+			Lateness:          5 * time.Minute,
 
-			
 			S: rtt.RTTLocationContainer{
 				ServiceUID: "one",
 				LocationDetail: rtt.RTTLocation{
@@ -67,13 +64,12 @@ func TestLocationLineupToServices(t *testing.T) {
 			},
 		},
 		{
-			Valid:       true,
-			RequestDate: d,
-			GBTTDeparture: sdatetime("2023-04-05 02:15:00"),
+			Valid:             true,
+			RequestDate:       d,
+			GBTTDeparture:     sdatetime("2023-04-05 02:15:00"),
 			RealtimeDeparture: sdatetime("2023-04-05 02:10:00"),
-			Lateness: -5 * time.Minute,
+			Lateness:          -5 * time.Minute,
 
-			
 			S: rtt.RTTLocationContainer{
 				ServiceUID: "two",
 				LocationDetail: rtt.RTTLocation{
@@ -83,13 +79,12 @@ func TestLocationLineupToServices(t *testing.T) {
 			},
 		},
 		{
-			Valid:       true,
-			RequestDate: d,
-			GBTTDeparture: sdatetime("2023-04-05 23:30:00"),
+			Valid:             true,
+			RequestDate:       d,
+			GBTTDeparture:     sdatetime("2023-04-05 23:30:00"),
 			RealtimeDeparture: sdatetime("2023-04-06 00:15:00"),
-			Lateness: 45 * time.Minute,
+			Lateness:          45 * time.Minute,
 
-			
 			S: rtt.RTTLocationContainer{
 				ServiceUID: "three",
 				LocationDetail: rtt.RTTLocation{
@@ -98,7 +93,6 @@ func TestLocationLineupToServices(t *testing.T) {
 				},
 			},
 		},
-
 	}
 
 	if !reflect.DeepEqual(expected, ws) {
