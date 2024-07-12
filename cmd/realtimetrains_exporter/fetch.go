@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	rtt "github.com/cheesestraws/gortt"
+
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/fn"
 )
 
@@ -14,12 +16,7 @@ type Fetch struct {
 	To      *time.Time
 }
 
-type FetchResult struct {
-	Fetch
-	//Results *RTTLocationLineup
-}
-
-func (f *Fetch) Do(ctx context.Context, rttapi interface{}) (*FetchResult, error) {
+func (f *Fetch) Do(ctx context.Context, cli *rtt.Client) (WrappedServices, error) {
 	return nil, nil
 }
 
@@ -64,4 +61,16 @@ func MakeFetches(station string, from time.Time, to time.Time) Fetches {
 	fetches[len(fetches)-1].To = &t
 
 	return fetches
+}
+
+func (fs Fetches) Do(ctx context.Context, cli *rtt.Client) (WrappedServices, error) {
+	var ss WrappedServices
+	for _, f := range fs {
+		ws, err := f.Do(ctx, cli)
+		if err != nil {
+			return ss, err
+		}
+		
+		ss = append(ss, ws...)
+	}
 }
