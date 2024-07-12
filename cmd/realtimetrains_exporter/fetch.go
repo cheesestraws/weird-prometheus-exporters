@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"time"
+	"errors"
 
 	rtt "github.com/cheesestraws/gortt"
 
@@ -17,7 +18,16 @@ type Fetch struct {
 }
 
 func (f *Fetch) Do(ctx context.Context, cli *rtt.Client) (WrappedServices, error) {
-	return nil, nil
+	ll, err := cli.GetServicesFromStationForDate(ctx, f.Station, f.Date)
+	if err != nil {
+		return nil, err
+	}
+	
+	if ll == nil {
+		return nil, errors.New("silently got nil lineup; probably a bug")
+	}
+	
+	return LocationLineupToServices(*ll, f.Date), nil
 }
 
 // truncdate, truncates to the nearest local day.  it's a pun, geddit
@@ -73,4 +83,6 @@ func (fs Fetches) Do(ctx context.Context, cli *rtt.Client) (WrappedServices, err
 		
 		ss = append(ss, ws...)
 	}
+	
+	return ss, nil
 }
