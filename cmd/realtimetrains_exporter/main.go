@@ -34,8 +34,6 @@ func doFetchState() {
 	// Make a consistent snapshots of the time windows
 	windows := config.TimeWindows.Snapshot()
 	
-	log.Printf("%+v", windows)
-
 	furthestBack := time.Unix(math.MaxInt64/2, 0)
 	furthestFwd := time.Time{}
 	
@@ -49,8 +47,6 @@ func doFetchState() {
 		}
 	}
 	
-	log.Printf("Furthest back: %v, furthest fwd: %v", furthestBack, furthestFwd)
-
 	fetches := MakeFetches(*state.station, furthestBack, furthestFwd)
 	allServices, err := fetches.Do(context.Background(), cli)
 	if err != nil {
