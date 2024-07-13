@@ -1,63 +1,111 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"log"
-	"time"
-	"sync"
-	"fmt"
 	"flag"
+	"fmt"
+	"log"
 	"net/http"
+	"sync"
+	"time"
+	"math"
 
 	rtt "github.com/cheesestraws/gortt"
 )
 
 var state struct {
 	station *string
-	dump *bool
+	dump    *bool
 
-	l     sync.RWMutex	
+	l     sync.RWMutex
 	stuff []byte
 }
 
 func doFetchState() {
+	var summarieses []*Summaries
+
 	cli, err := rtt.NewClient("", "")
 	if err != nil {
 		log.Printf("rtt.NewClient: %v", err)
 		return
 	}
+	
+	// Make a consistent snapshots of the time windows
+	windows := config.TimeWindows.Snapshot()
+	
+	log.Printf("%+v", windows)
 
-	from := time.Now().Add(-1 * time.Hour)
-	to := time.Now().Add(30 * time.Minute)
+	furthestBack := time.Unix(math.MaxInt64/2, 0)
+	furthestFwd := time.Time{}
+	
+	for _, w := range windows {
+		if w.From.Before(furthestBack) {
+			furthestBack = w.From
+		}
+		
+		if w.To.After(furthestFwd) {
+			furthestFwd = w.To
+		}
+	}
+	
+	log.Printf("Furthest back: %v, furthest fwd: %v", furthestBack, furthestFwd)
 
-	fetches := MakeFetches(*state.station, from, to)
-	services, err := fetches.Do(context.Background(), cli)
+	fetches := MakeFetches(*state.station, furthestBack, furthestFwd)
+	allServices, err := fetches.Do(context.Background(), cli)
 	if err != nil {
 		log.Printf("fetches.Do: %v", err)
 	}
 
-	services = services.ByTimeWindow(from, to)
-	sums := services.Summarise(90*time.Minute)
-	
-	bs := sums.Prometheise()
-	
+	for _, window := range config.TimeWindows {
+		services := allServices.ByTimeWindow(window.From(), window.To())
+
+		// "All trains" summary
+		sums := services.Summarise(window.Name)
+		summarieses = append(summarieses, sums)
+
+		// Per destination
+		for _, l := range services.Destinations() {
+			loc := l // copy here because we need to take ref later
+			filtered := services.ByDestinationTIPLOC(l.TIPLOC)
+			sums := filtered.Summarise(window.Name)
+			sums.Destination = &loc
+
+			summarieses = append(summarieses, sums)
+		}
+		
+		// Per origin
+		for _, l := range services.Origins() {
+			loc := l // copy here because we need to take ref later
+			filtered := services.ByOriginTIPLOC(l.TIPLOC)
+			sums := filtered.Summarise(window.Name)
+			sums.Origin = &loc
+
+			summarieses = append(summarieses, sums)
+		}
+
+	}
+
+	// write em out and sell em cheap
+	bs := &bytes.Buffer{}
+	for _, v := range summarieses {
+		bs.Write(v.Prometheise())
+		bs.Write([]byte("\n\n"))
+	}
+
 	if *state.dump {
 		log.Printf("%s\n", bs)
 	}
-	
-	log.Printf("Destinations: %+v", services.Destinations())
-	log.Printf("Origins: %+v", services.Origins())
 
-	
 	state.l.Lock()
-	state.stuff = bs
+	state.stuff = bs.Bytes()
 	state.l.Unlock()
 }
 
 func fetch_and_update_forever() {
 	for {
 		doFetchState()
-		time.Sleep(2 *  time.Minute)
+		time.Sleep(2 * time.Minute)
 	}
 }
 
@@ -82,7 +130,6 @@ func serve(addr string) {
 
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
-
 
 func main() {
 	addr := flag.String("addr", ":9403", "address to listen on")

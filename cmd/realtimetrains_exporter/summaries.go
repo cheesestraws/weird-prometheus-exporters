@@ -3,18 +3,18 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"time"
 	"reflect"
+	"time"
 )
 
 type Summaries struct {
-	Window         time.Duration
-	StationName        string
-	StationCRS string
+	Window        string
+	StationName   string
+	StationCRS    string
 	StationTIPLOC string
-	
-	OriginCRS      *string
-	DestinationCRS *string
+
+	Origin      *Location
+	Destination *Location
 
 	NumTrains          int `prometheus:"num_trains"`
 	NumLateTrains      int `prometheus:"num_late_trains"`
@@ -26,7 +26,7 @@ type Summaries struct {
 	CancelReasons map[string]int `prometheus_map:"cancel_reasons" prometheus_map_key:"reason"`
 }
 
-func (ss WrappedServices) Summarise(window time.Duration) *Summaries {
+func (ss WrappedServices) Summarise(window string) *Summaries {
 	sum := &Summaries{
 		Window:        window,
 		CancelReasons: make(map[string]int),
@@ -68,7 +68,9 @@ func (ss WrappedServices) Summarise(window time.Duration) *Summaries {
 		sum.StationTIPLOC = s.S.LocationDetail.TIPLOC
 	}
 
-	sum.AvgLateTime = latenessAccumulator / time.Duration(sum.NumTrains)
+	if sum.NumTrains != 0 {
+		sum.AvgLateTime = latenessAccumulator / time.Duration(sum.NumTrains)
+	}
 
 	return sum
 }
@@ -76,28 +78,28 @@ func (ss WrappedServices) Summarise(window time.Duration) *Summaries {
 func (s *Summaries) metricName(baseMetricName string) string {
 	mn := fmt.Sprintf("realtimetrains_%s", baseMetricName)
 
-	if s.OriginCRS != nil {
+	if s.Origin != nil {
 		mn += "_from"
 	}
 
-	if s.DestinationCRS != nil {
+	if s.Destination != nil {
 		mn += "_to"
 	}
-
-	mn += fmt.Sprintf("_%v", s.Window)
-
+	
 	return mn
 }
 
 func (s *Summaries) metricLabels() string {
-	ll := fmt.Sprintf("station=%q,crs=%q,tiploc=%q", s.StationName, s.StationCRS, s.StationTIPLOC)
+	ll := fmt.Sprintf("timewindow=%q,station=%q,crs=%q,tiploc=%q", s.Window, s.StationName, s.StationCRS, s.StationTIPLOC)
 
-	if s.OriginCRS != nil {
-		ll = fmt.Sprintf(",from=%q", *s.OriginCRS)
+	if s.Origin != nil {
+		ll += ","
+		ll += s.Origin.PrometheusLabels("from_")
 	}
 
-	if s.DestinationCRS != nil {
-		ll = fmt.Sprintf(",to=%q", *s.DestinationCRS)
+	if s.Destination != nil {
+		ll += ","
+		ll += s.Destination.PrometheusLabels("to_")
 	}
 
 	return ll
@@ -113,20 +115,19 @@ func (s *Summaries) Prometheise() []byte {
 
 	val := func(metric string, extraLabels string, i interface{}) {
 		var valstr string
-		switch v := i.(type){
+		switch v := i.(type) {
 		case time.Duration:
 			valstr = fmt.Sprintf("%v", v.Seconds())
 		default:
 			valstr = fmt.Sprintf("%v", v)
 		}
 		fmt.Fprintf(bs, "%s{%s%s} %s\n", metric, labels, extraLabels, valstr)
-	} 
-
+	}
 
 	// Now iterate through the fields
 	theStruct := reflect.ValueOf(*s)
 	myType := theStruct.Type()
-	
+
 	for i := 0; i < myType.NumField(); i++ {
 		fld := myType.Field(i)
 		// is it a scalar?
@@ -137,14 +138,14 @@ func (s *Summaries) Prometheise() []byte {
 			mtype(realName, "gauge")
 			val(realName, "", value)
 		}
-				
+
 		// is it a map?
 		mapname := fld.Tag.Get("prometheus_map")
 		keyname := fld.Tag.Get("prometheus_map_key")
 		if mapname != "" && keyname != "" && fld.Type.Kind() == reflect.Map {
 			// Iterate over it
 			realName := s.metricName(mapname)
-			
+
 			mtype(realName, "gauge")
 			iter := theStruct.Field(i).MapRange()
 			for iter.Next() {
@@ -155,6 +156,6 @@ func (s *Summaries) Prometheise() []byte {
 			}
 		}
 	}
-	
+
 	return bs.Bytes()
 }
