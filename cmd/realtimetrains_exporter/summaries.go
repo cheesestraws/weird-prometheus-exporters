@@ -9,7 +9,10 @@ import (
 
 type Summaries struct {
 	Window         time.Duration
-	Station        string
+	StationName        string
+	StationCRS string
+	StationTIPLOC string
+	
 	OriginCRS      *string
 	DestinationCRS *string
 
@@ -23,10 +26,9 @@ type Summaries struct {
 	CancelReasons map[string]int `prometheus_map:"cancel_reasons" prometheus_map_key:"reason"`
 }
 
-func (ss WrappedServices) Summarise(window time.Duration, station string) *Summaries {
+func (ss WrappedServices) Summarise(window time.Duration) *Summaries {
 	sum := &Summaries{
 		Window:        window,
-		Station:       station,
 		CancelReasons: make(map[string]int),
 	}
 
@@ -61,6 +63,9 @@ func (ss WrappedServices) Summarise(window time.Duration, station string) *Summa
 			sum.CancelReasons[s.S.LocationDetail.CancelReasonCode]++
 		}
 
+		sum.StationName = s.S.LocationDetail.Description
+		sum.StationCRS = s.S.LocationDetail.CRS
+		sum.StationTIPLOC = s.S.LocationDetail.TIPLOC
 	}
 
 	sum.AvgLateTime = latenessAccumulator / time.Duration(sum.NumTrains)
@@ -85,7 +90,7 @@ func (s *Summaries) metricName(baseMetricName string) string {
 }
 
 func (s *Summaries) metricLabels() string {
-	ll := fmt.Sprintf("station=%q", s.Station)
+	ll := fmt.Sprintf("station=%q,crs=%q,tiploc=%q", s.StationName, s.StationCRS, s.StationTIPLOC)
 
 	if s.OriginCRS != nil {
 		ll = fmt.Sprintf(",from=%q", *s.OriginCRS)
@@ -124,7 +129,6 @@ func (s *Summaries) Prometheise() []byte {
 	
 	for i := 0; i < myType.NumField(); i++ {
 		fld := myType.Field(i)
-		
 		// is it a scalar?
 		basename := fld.Tag.Get("prometheus")
 		if basename != "" {
@@ -133,7 +137,7 @@ func (s *Summaries) Prometheise() []byte {
 			mtype(realName, "gauge")
 			val(realName, "", value)
 		}
-		
+				
 		// is it a map?
 		mapname := fld.Tag.Get("prometheus_map")
 		keyname := fld.Tag.Get("prometheus_map_key")

@@ -75,3 +75,59 @@ func LocationLineupToServices(ll rtt.RTTLocationLineup, date time.Time) WrappedS
 		}
 	}))
 }
+
+type Location struct {
+	Name string `prometheus_label:"name"`
+	TIPLOC string `prometheus_label:"tiploc"`
+}
+
+func (w WrappedService) Origins() []Location {
+	accum := make(map[Location]struct{})
+	
+	for _, v := range w.S.LocationDetail.Origin {
+		loc := Location{
+			Name: v.Description,
+			TIPLOC: v.TIPLOC,
+		}
+		
+		accum[loc] = struct{}{}
+	}
+	
+	return fn.Mapkeymap(accum, fn.Id[Location])
+}
+
+func (w WrappedService) Destinations() []Location {
+	accum := make(map[Location]struct{})
+	
+	for _, v := range w.S.LocationDetail.Destination {
+		loc := Location{
+			Name: v.Description,
+			TIPLOC: v.TIPLOC,
+		}
+		
+		accum[loc] = struct{}{}
+	}
+	
+	return fn.Mapkeymap(accum, fn.Id[Location])
+}
+
+
+func (w WrappedServices) Origins() []Location {
+	var locations []Location
+	
+	for _, v := range w {
+		locations = append(locations, v.Origins()...)
+	}
+	
+	return fn.Dedupe(locations)
+}
+
+func (w WrappedServices) Destinations() []Location {
+	var locations []Location
+	
+	for _, v := range w {
+		locations = append(locations, v.Destinations()...)
+	}
+	
+	return fn.Dedupe(locations)
+}
