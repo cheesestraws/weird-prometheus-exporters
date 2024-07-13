@@ -55,10 +55,11 @@ func (ss WrappedServices) Summarise(window string) *Summaries {
 			sum.WorstLateTime = s.Lateness
 		}
 
+		cc :=  s.S.LocationDetail.CancelReasonCode
 		if s.S.LocationDetail.CancelReasonShortText != "" {
-			sum.CancelReasons[s.S.LocationDetail.CancelReasonShortText]++
+			sum.CancelReasons[cc + " - " + s.S.LocationDetail.CancelReasonShortText]++
 		} else if s.S.LocationDetail.CancelReasonLongText != "" {
-			sum.CancelReasons[s.S.LocationDetail.CancelReasonLongText]++
+			sum.CancelReasons[cc + " - " + s.S.LocationDetail.CancelReasonLongText]++
 		} else if s.S.LocationDetail.CancelReasonCode != "" {
 			sum.CancelReasons[s.S.LocationDetail.CancelReasonCode]++
 		}
