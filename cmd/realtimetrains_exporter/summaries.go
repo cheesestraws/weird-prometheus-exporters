@@ -45,10 +45,6 @@ func (ss WrappedServices) Summarise(window string) *Summaries {
 			sum.NumLateTrains++
 		}
 
-		if s.S.LocationDetail.DisplayAs == "CANCELLED_CALL" {
-			sum.NumCancelledTrains++
-		}
-
 		latenessAccumulator += s.Lateness
 
 		if s.Lateness > sum.WorstLateTime {
@@ -58,10 +54,13 @@ func (ss WrappedServices) Summarise(window string) *Summaries {
 		cc :=  s.S.LocationDetail.CancelReasonCode
 		if s.S.LocationDetail.CancelReasonShortText != "" {
 			sum.CancelReasons[cc + " - " + s.S.LocationDetail.CancelReasonShortText]++
+			sum.NumCancelledTrains++
 		} else if s.S.LocationDetail.CancelReasonLongText != "" {
 			sum.CancelReasons[cc + " - " + s.S.LocationDetail.CancelReasonLongText]++
+			sum.NumCancelledTrains++
 		} else if s.S.LocationDetail.CancelReasonCode != "" {
 			sum.CancelReasons[s.S.LocationDetail.CancelReasonCode]++
+			sum.NumCancelledTrains++
 		}
 
 		sum.StationName = s.S.LocationDetail.Description
