@@ -1,10 +1,10 @@
 package wiltshirebins
 
 type Collections struct {
-	HouseholdWaste int
-	Recycling      int
+	HouseholdWaste int `prometheus:"household_waste"`
+	Recycling      int `prometheus:"recycling"`
 
-	Errors map[string]int
+	Errors map[string]int `prometheus_map:"errors" prometheus_map_key:"error"`
 }
 
 func (c *Collections) errorFill(errorType string) {
