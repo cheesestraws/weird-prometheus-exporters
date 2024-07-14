@@ -42,7 +42,7 @@ func fetch_and_update_forever() {
 
 	for {
 		today := truncdate(time.Now())
-		tomorrow = today.Add(26 * time.Hour)
+		tomorrow := today.Add(26 * time.Hour)
 		
 		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 		collection, err := wiltshirebins.DefaultClient.GetForDate(ctx, tomorrow, *state.postcode, *state.uprn)
