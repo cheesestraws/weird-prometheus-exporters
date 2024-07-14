@@ -13,7 +13,7 @@ var config = Config{
 			From: func() time.Time { return time.Now().Add(-1 * time.Hour) },
 			To:   func() time.Time { return time.Now().Add(30 * time.Minute) },
 		},
-		
+
 		{
 			Name: "2h ahead",
 			From: func() time.Time { return time.Now() },

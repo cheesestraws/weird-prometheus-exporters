@@ -2,7 +2,7 @@ package main
 
 import (
 	"time"
-	
+
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/fn"
 )
 
@@ -15,14 +15,14 @@ type TimeWindow struct {
 type TimeWindowSnapshot struct {
 	Name string
 	From time.Time
-	To time.Time
+	To   time.Time
 }
 
 func (t TimeWindow) Snapshot() TimeWindowSnapshot {
 	return TimeWindowSnapshot{
 		Name: t.Name,
 		From: t.From(),
-		To: t.To(),
+		To:   t.To(),
 	}
 }
 

@@ -39,11 +39,11 @@ func TestCLIQuerier(t *testing.T) {
 				t.Errorf("NBPLookup returned err: %v", err)
 				return
 			}
-	
+
 			for k, v := range m {
 				t.Logf("    %s => %s", k, v)
 			}
-			
+
 			m, err = q.NBPLookup(fmt.Sprintf("=:AppleRouter@%s", zone))
 			if err != nil {
 				t.Errorf("NBPLookup returned err: %v", err)

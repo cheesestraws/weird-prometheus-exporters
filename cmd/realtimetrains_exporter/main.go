@@ -6,10 +6,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"sync"
 	"time"
-	"math"
 
 	rtt "github.com/cheesestraws/gortt"
 )
@@ -30,23 +30,23 @@ func doFetchState() {
 		log.Printf("rtt.NewClient: %v", err)
 		return
 	}
-	
+
 	// Make a consistent snapshots of the time windows
 	windows := config.TimeWindows.Snapshot()
-	
+
 	furthestBack := time.Unix(math.MaxInt64/2, 0)
 	furthestFwd := time.Time{}
-	
+
 	for _, w := range windows {
 		if w.From.Before(furthestBack) {
 			furthestBack = w.From
 		}
-		
+
 		if w.To.After(furthestFwd) {
 			furthestFwd = w.To
 		}
 	}
-	
+
 	fetches := MakeFetches(*state.station, furthestBack, furthestFwd)
 	allServices, err := fetches.Do(context.Background(), cli)
 	if err != nil {
@@ -69,7 +69,7 @@ func doFetchState() {
 
 			summarieses = append(summarieses, sums)
 		}
-		
+
 		// Per origin
 		for _, l := range services.Origins() {
 			loc := l // copy here because we need to take ref later

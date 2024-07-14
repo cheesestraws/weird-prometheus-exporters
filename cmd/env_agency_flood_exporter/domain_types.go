@@ -28,7 +28,7 @@ func (r RiverLevel) TypicalHigh(fudges Fudges) *float64 {
 	if ok {
 		return &hi
 	}
-	
+
 	return r.typicalHigh
 }
 
@@ -37,10 +37,9 @@ func (r RiverLevel) TypicalLow(fudges Fudges) *float64 {
 	if ok {
 		return &lo
 	}
-	
+
 	return r.typicalLow
 }
-
 
 var trimLabelPrefix string
 

@@ -1,12 +1,12 @@
 package declprom
 
 import (
-	"fmt"
 	"bytes"
-	"time"
+	"fmt"
 	"reflect"
-	"strings"
 	"sort"
+	"strings"
+	"time"
 )
 
 type RenamePrometheusMetricer interface {
@@ -19,12 +19,14 @@ type PrometheusLabelser interface {
 
 type Marshaller struct {
 	MetricNamePrefix string
+	MetricNameSuffix string
+
 	BaseLabels map[string]string
 }
 
 func (m *Marshaller) metricLabels(i interface{}, localLabels map[string]string, extraLabels map[string]string) map[string]string {
 	labelMap := make(map[string]string)
-	
+
 	// Can we get labels from the struct?
 	lr, ok := i.(PrometheusLabelser)
 	if ok {
@@ -33,17 +35,17 @@ func (m *Marshaller) metricLabels(i interface{}, localLabels map[string]string, 
 			labelMap[k] = v
 		}
 	}
-	
+
 	// Get labels from the marshaller
 	for k, v := range m.BaseLabels {
 		labelMap[k] = v
 	}
-	
+
 	// Get labels from caller
 	for k, v := range localLabels {
 		labelMap[k] = v
 	}
-	
+
 	// Get labels from fields (like maps)
 	for k, v := range extraLabels {
 		labelMap[k] = v
@@ -55,27 +57,26 @@ func (m *Marshaller) metricLabels(i interface{}, localLabels map[string]string, 
 func (m *Marshaller) metricLabelString(i interface{}, localLabels map[string]string, extraLabels map[string]string) string {
 	var labels []string
 	lmap := m.metricLabels(i, localLabels, extraLabels)
-	
+
 	for k, v := range lmap {
 		labels = append(labels, fmt.Sprintf("%s=%q", k, v))
 	}
-	
+
 	sort.Strings(labels)
 
-	return strings.Join(labels, ",")	
+	return strings.Join(labels, ",")
 }
-
 
 func (m *Marshaller) metricName(baseName string, i interface{}) string {
 	name := baseName
-	
+
 	// Can we rewrite?
 	re, ok := i.(RenamePrometheusMetricer)
 	if ok {
 		name = re.RenamePrometheusMetric(baseName)
 	}
-	
-	return m.MetricNamePrefix + name
+
+	return m.MetricNamePrefix + name + m.MetricNameSuffix
 }
 
 func (m *Marshaller) Marshal(s interface{}, localLabels map[string]string) []byte {
@@ -105,7 +106,7 @@ func (m *Marshaller) Marshal(s interface{}, localLabels map[string]string) []byt
 		if !fld.IsExported() {
 			continue
 		}
-		
+
 		// is it a scalar?
 		basename := fld.Tag.Get("prometheus")
 		if basename != "" {

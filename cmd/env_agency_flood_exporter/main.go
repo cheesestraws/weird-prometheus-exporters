@@ -19,7 +19,7 @@ var fudges Fudges
 
 func mangleParams() ([]int, string, error) {
 	var err error
-	
+
 	sp := flag.String("stations", "43160,1754,43159,43165", "comma-separated list of station IDs; see https://environment.data.gov.uk/flood-monitoring/id/stations/")
 	addr := flag.String("addr", ":9401", "address to listen on")
 	flag.StringVar(&trimLabelPrefix, "strip-prefix", "salisbury ", "prefix to strip from station labels")
@@ -40,7 +40,7 @@ func mangleParams() ([]int, string, error) {
 		}
 		ints = append(ints, i)
 	}
-	
+
 	fudges, err = ParseFudges(*fudgeStrings)
 	if err != nil {
 		return ints, *addr, err

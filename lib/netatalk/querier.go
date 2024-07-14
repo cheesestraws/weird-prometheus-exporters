@@ -47,7 +47,7 @@ func (c cliQuerier) NBPLookup(pattern string) (map[string]string, error) {
 			continue
 		}
 		flds := spaces.Split(ll, -1)
-		
+
 		if len(flds) != 2 {
 			return nil, errors.New("invalid formatting from nmblkup")
 		}
