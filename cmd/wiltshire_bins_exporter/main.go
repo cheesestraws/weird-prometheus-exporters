@@ -80,7 +80,7 @@ func serve(addr string) {
 func main() {
 	// cli arguments
 	addr := flag.String("addr", ":9404", "address to listen on")
-	state.dump = flag.Bool("d", true, "dump metrics to stdout as well as http")
+	state.dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
 	state.postcode = flag.String("postcode", "", "postcode of your house")
 	state.uprn = flag.String("uprn", "", "the unique property reference number of your house; you can find this at https://www.findmyaddress.co.uk")
 	flag.Parse()
