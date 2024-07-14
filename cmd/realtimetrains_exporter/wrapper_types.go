@@ -54,7 +54,7 @@ func LocationLineupToServices(ll rtt.RTTLocationLineup, date time.Time) WrappedS
 
 		realtimeDeparture, err := trainTimeToGoTime(date, s.LocationDetail.RealtimeDeparture)
 		if err != nil {
-			log.Printf("Realtime departure time parse error: %v", err)
+			log.Printf("Realtime departure time parse error: %v (GBTT time is %v)", err, gbttDeparture)
 			valid = false
 		}
 
