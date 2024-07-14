@@ -1,2 +1,4 @@
 github.com/cheesestraws/gortt v0.0.0-20240706110747-23ddea4c83ef h1:Nj8/J7S2L6oRzzIXPwb3aTyTbhbln1MuV1SbTVco1r4=
 github.com/cheesestraws/gortt v0.0.0-20240706110747-23ddea4c83ef/go.mod h1:0EjwqTnWeUsZdZf8LCjmzjZhn/2B9gPkUAQ+MQGXASc=
+golang.org/x/net v0.27.0 h1:5K3Njcw06/l2y9vpGCSdcxWOYHOUk3dVNGDXN+FvAys=
+golang.org/x/net v0.27.0/go.mod h1:dDi0PyhWNoiUOrAS8uXv/vnScO4wnHQO4mj9fn/RytE=
