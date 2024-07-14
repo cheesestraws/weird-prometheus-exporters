@@ -56,6 +56,9 @@ func LocationLineupToServices(ll rtt.RTTLocationLineup, date time.Time) WrappedS
 		if err != nil && s.ServiceType != "bus" {
 			log.Printf("Realtime departure time parse error: %v (GBTT time is %v)", err, gbttDeparture)
 			valid = false
+		} else if s.ServiceType == "bus" {
+			// whistle while you bodge
+			realtimeDeparture = gbttDeparture
 		}
 
 		lateness := realtimeDeparture.Sub(gbttDeparture)
