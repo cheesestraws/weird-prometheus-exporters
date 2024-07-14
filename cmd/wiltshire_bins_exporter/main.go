@@ -23,10 +23,17 @@ var state struct {
 	stuff []byte
 }
 
+// truncdate, truncates to the nearest local day.  it's a pun, geddit
+func truncdate(t time.Time) time.Time {
+	yyyy, mm, dd := t.Date()
+
+	return time.Date(yyyy, mm, dd, 0, 0, 0, 0, time.Local)
+}
+
 func fetch_and_update_forever() {
 	m := declprom.Marshaller{
 		MetricNamePrefix: "bincollection_",
-		MetricNameSuffix: "_today",
+		MetricNameSuffix: "_tomorrow",
 		BaseLabels: map[string]string{
 			"postcode": *state.postcode,
 			"uprn":     *state.uprn,
@@ -34,8 +41,11 @@ func fetch_and_update_forever() {
 	}
 
 	for {
+		today := truncdate(time.Now())
+		tomorrow = today.Add(26 * time.Hour)
+		
 		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-		collection, err := wiltshirebins.DefaultClient.GetForDate(ctx, time.Now(), *state.postcode, *state.uprn)
+		collection, err := wiltshirebins.DefaultClient.GetForDate(ctx, tomorrow, *state.postcode, *state.uprn)
 		if err != nil {
 			log.Printf("fetch error: %v", err)
 		}
