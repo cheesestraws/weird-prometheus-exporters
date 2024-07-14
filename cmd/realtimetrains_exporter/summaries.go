@@ -19,6 +19,7 @@ type Summaries struct {
 	NumTrains          int `prometheus:"num_trains"`
 	NumLateTrains      int `prometheus:"num_late_trains"`
 	NumCancelledTrains int `prometheus:"num_cancelled_trains"`
+	BusReplacements    int `prometheus:"bus_replacements"`
 
 	AvgLateTime   time.Duration `prometheus:"avg_late_time"`
 	WorstLateTime time.Duration `prometheus:"worst_late_time"`
@@ -61,6 +62,10 @@ func (ss WrappedServices) Summarise(window string) *Summaries {
 		} else if s.S.LocationDetail.CancelReasonCode != "" {
 			sum.CancelReasons[s.S.LocationDetail.CancelReasonCode]++
 			sum.NumCancelledTrains++
+		}
+		
+		if s.S.ServiceType == "bus" {
+			sum.BusReplacements++
 		}
 
 		sum.StationName = s.S.LocationDetail.Description
