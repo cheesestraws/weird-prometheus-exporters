@@ -19,6 +19,8 @@ type WrappedService struct {
 	RealtimeDeparture time.Time
 	Lateness          time.Duration
 
+	Cancelled bool
+
 	S rtt.RTTLocationContainer
 }
 
@@ -46,6 +48,18 @@ func trainTimeToGoTime(date time.Time, t string) (time.Time, error) {
 func LocationLineupToServices(ll rtt.RTTLocationLineup, date time.Time) WrappedServices {
 	return WrappedServices(fn.Map(ll.Services, func(s rtt.RTTLocationContainer) WrappedService {
 		valid := true
+
+		// do we have a cancellation reason?
+		cancelled := false
+		if s.LocationDetail.CancelReasonShortText != "" {
+			cancelled = true
+		} else if s.LocationDetail.CancelReasonLongText != "" {
+			cancelled = true
+		} else if s.LocationDetail.CancelReasonCode != "" {
+			cancelled = true
+		} else if s.LocationDetail.DisplayAs == "CANCELLED_CALL" {
+			cancelled = true
+		}
 		gbttDeparture, err := trainTimeToGoTime(date, s.LocationDetail.GBTTBookedDeparture)
 		if err != nil {
 			log.Printf("GBTT departure time parse error: %v", err)
@@ -61,6 +75,12 @@ func LocationLineupToServices(ll rtt.RTTLocationLineup, date time.Time) WrappedS
 			realtimeDeparture = gbttDeparture
 		}
 
+		if s.Cancelled {
+			// real time for cancelled trains is 'never'.
+			// Bodge it so they do something useful
+			realtimeDeparture = gbttDeparture
+		}
+
 		lateness := realtimeDeparture.Sub(gbttDeparture)
 		// If we're ludicrously early, it's more likely that we're slightly late
 		if lateness <= -12*time.Hour {
@@ -72,6 +92,7 @@ func LocationLineupToServices(ll rtt.RTTLocationLineup, date time.Time) WrappedS
 			Valid:             valid,
 			RequestDate:       date,
 			GBTTDeparture:     gbttDeparture,
+			Cancelled:         cancelled,
 			RealtimeDeparture: realtimeDeparture,
 			Lateness:          realtimeDeparture.Sub(gbttDeparture),
 			S:                 s,
