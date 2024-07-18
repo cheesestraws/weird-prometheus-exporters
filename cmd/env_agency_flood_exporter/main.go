@@ -57,7 +57,7 @@ func runloop(cli *http.Client, sleepTime time.Duration, stationIDs []int) {
 		if err != nil {
 			// Don't propagate the error upwards, print it and carry on
 			log.Printf("err: %v", err)
-			break
+			continue
 		}
 
 		levels := fn.Map(stations, riverLevelFromStation)
