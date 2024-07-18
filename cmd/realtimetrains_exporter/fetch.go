@@ -17,17 +17,17 @@ type Fetch struct {
 	To      *time.Time
 }
 
-func (f *Fetch) Do(ctx context.Context, cli *rtt.Client) (WrappedServices, error) {
+func (f *Fetch) Do(ctx context.Context, cli *rtt.Client) (rtt.RTTLocationDetail, WrappedServices, error) {
 	ll, err := cli.GetServicesFromStationForDate(ctx, f.Station, f.Date)
 	if err != nil {
-		return nil, err
+		return rtt.RTTLocationDetail{}, nil, err
 	}
 
 	if ll == nil {
-		return nil, errors.New("silently got nil lineup; probably a bug")
+		return rtt.RTTLocationDetail{}, nil, errors.New("silently got nil lineup; probably a bug")
 	}
 
-	return LocationLineupToServices(*ll, f.Date), nil
+	return ll.Location, LocationLineupToServices(*ll, f.Date), nil
 }
 
 // truncdate, truncates to the nearest local day.  it's a pun, geddit
@@ -73,16 +73,17 @@ func MakeFetches(station string, from time.Time, to time.Time) Fetches {
 	return fetches
 }
 
-func (fs Fetches) Do(ctx context.Context, cli *rtt.Client) (WrappedServices, error) {
+func (fs Fetches) Do(ctx context.Context, cli *rtt.Client) (rtt.RTTLocationDetail, WrappedServices, error) {
 	var ss WrappedServices
+	var ld rtt.RTTLocationDetail
 	for _, f := range fs {
-		ws, err := f.Do(ctx, cli)
+		ld, ws, err := f.Do(ctx, cli)
 		if err != nil {
-			return ss, err
+			return ld, ss, err
 		}
 
 		ss = append(ss, ws...)
 	}
 
-	return ss, nil
+	return ld, ss, nil
 }

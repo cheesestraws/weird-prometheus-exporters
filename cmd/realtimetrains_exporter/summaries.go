@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"time"
+
+	rtt "github.com/cheesestraws/gortt"
 )
 
 type Summaries struct {
@@ -27,8 +29,11 @@ type Summaries struct {
 	CancelReasons map[string]int `prometheus_map:"cancel_reasons" prometheus_map_key:"reason"`
 }
 
-func (ss WrappedServices) Summarise(window string) *Summaries {
+func (ss WrappedServices) Summarise(loc rtt.RTTLocationDetail, window string) *Summaries {
 	sum := &Summaries{
+		StationName:   loc.Name,
+		StationCRS:    loc.CRS,
+		StationTIPLOC: loc.TIPLOC,
 		Window:        window,
 		CancelReasons: make(map[string]int),
 	}
@@ -75,10 +80,6 @@ func (ss WrappedServices) Summarise(window string) *Summaries {
 				sum.BusReplacements++
 			}
 		}
-
-		sum.StationName = s.StationName
-		sum.StationCRS = s.StationCRS
-		sum.StationTIPLOC = s.StationTIPLOC
 	}
 
 	if sum.NumTrains != 0 {

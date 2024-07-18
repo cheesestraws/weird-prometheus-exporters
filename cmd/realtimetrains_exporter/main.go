@@ -48,7 +48,7 @@ func doFetchState() {
 	}
 
 	fetches := MakeFetches(*state.station, furthestBack, furthestFwd)
-	allServices, err := fetches.Do(context.Background(), cli)
+	myLocation, allServices, err := fetches.Do(context.Background(), cli)
 	if err != nil {
 		log.Printf("fetches.Do: %v", err)
 	}
@@ -57,14 +57,14 @@ func doFetchState() {
 		services := allServices.ByTimeWindow(window.From(), window.To())
 
 		// "All trains" summary
-		sums := services.Summarise(window.Name)
+		sums := services.Summarise(myLocation, window.Name)
 		summarieses = append(summarieses, sums)
 
 		// Per destination
 		for _, l := range services.Destinations() {
 			loc := l // copy here because we need to take ref later
 			filtered := services.ByDestinationTIPLOC(l.TIPLOC)
-			sums := filtered.Summarise(window.Name)
+			sums := filtered.Summarise(myLocation, window.Name)
 			sums.Destination = &loc
 
 			summarieses = append(summarieses, sums)
@@ -74,7 +74,7 @@ func doFetchState() {
 		for _, l := range services.Origins() {
 			loc := l // copy here because we need to take ref later
 			filtered := services.ByOriginTIPLOC(l.TIPLOC)
-			sums := filtered.Summarise(window.Name)
+			sums := filtered.Summarise(myLocation, window.Name)
 			sums.Origin = &loc
 
 			summarieses = append(summarieses, sums)
