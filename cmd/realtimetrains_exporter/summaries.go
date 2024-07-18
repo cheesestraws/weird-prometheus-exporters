@@ -76,9 +76,9 @@ func (ss WrappedServices) Summarise(window string) *Summaries {
 			}
 		}
 
-		sum.StationName = s.S.LocationDetail.Description
-		sum.StationCRS = s.S.LocationDetail.CRS
-		sum.StationTIPLOC = s.S.LocationDetail.TIPLOC
+		sum.StationName = s.StationName
+		sum.StationCRS = s.StationCRS
+		sum.StationTIPLOC = s.StationTIPLOC
 	}
 
 	if sum.NumTrains != 0 {

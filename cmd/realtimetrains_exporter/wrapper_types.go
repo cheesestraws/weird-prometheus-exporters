@@ -12,6 +12,10 @@ import (
 
 type WrappedService struct {
 	Valid bool
+	
+	StationName string
+	StationCRS string
+	StationTIPLOC string
 
 	RequestDate time.Time
 
@@ -90,6 +94,11 @@ func LocationLineupToServices(ll rtt.RTTLocationLineup, date time.Time) WrappedS
 
 		return WrappedService{
 			Valid:             valid,
+			
+			StationName: ll.Location.Name,
+			StationCRS: ll.Location.CRS,
+			StationTIPLOC: ll.Location.TIPLOC,
+			
 			RequestDate:       date,
 			GBTTDeparture:     gbttDeparture,
 			Cancelled:         cancelled,
