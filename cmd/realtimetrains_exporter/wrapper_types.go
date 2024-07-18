@@ -75,7 +75,7 @@ func LocationLineupToServices(ll rtt.RTTLocationLineup, date time.Time) WrappedS
 			realtimeDeparture = gbttDeparture
 		}
 
-		if s.Cancelled {
+		if cancelled {
 			// real time for cancelled trains is 'never'.
 			// Bodge it so they do something useful
 			realtimeDeparture = gbttDeparture
