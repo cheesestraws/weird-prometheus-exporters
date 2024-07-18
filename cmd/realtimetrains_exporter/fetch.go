@@ -26,7 +26,7 @@ func (f *Fetch) Do(ctx context.Context, cli *rtt.Client) (rtt.RTTLocationDetail,
 	if ll == nil {
 		return rtt.RTTLocationDetail{}, nil, errors.New("silently got nil lineup; probably a bug")
 	}
-
+	
 	return ll.Location, LocationLineupToServices(*ll, f.Date), nil
 }
 
@@ -77,11 +77,11 @@ func (fs Fetches) Do(ctx context.Context, cli *rtt.Client) (rtt.RTTLocationDetai
 	var ss WrappedServices
 	var ld rtt.RTTLocationDetail
 	for _, f := range fs {
-		ld, ws, err := f.Do(ctx, cli)
+		ld_, ws, err := f.Do(ctx, cli)
 		if err != nil {
-			return ld, ss, err
+			return ld_, ss, err
 		}
-
+		ld = ld_
 		ss = append(ss, ws...)
 	}
 
