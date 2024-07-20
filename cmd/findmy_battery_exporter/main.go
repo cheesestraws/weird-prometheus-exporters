@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
 	"flag"
-	"net/http"
 	"fmt"
-	
+	"log"
+	"net/http"
+
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/declprom"
 )
 
@@ -17,7 +17,7 @@ func produceMetricsBody() []byte {
 	m := declprom.Marshaller{
 		MetricNamePrefix: *prefix,
 	}
-	
+
 	devs, err := fetchDevices()
 	if err != nil {
 		log.Printf("err: %v", err)
@@ -43,22 +43,21 @@ func serve(addr string) {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-
 func main() {
 	// flags
 	prefix = flag.String("prefix", "findmy_", "prefix for metric names")
 	addr = flag.String("addr", ":9405", "address to listen on")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
 	flag.Parse()
-	
+
 	// check we're good to go
 	warnForUntestedVersions()
 	openFindMyApp()
 	checkForAccess()
-	
+
 	if *dump {
-		log.Printf("%s",produceMetricsBody())
+		log.Printf("%s", produceMetricsBody())
 	}
-	
+
 	serve(*addr)
 }

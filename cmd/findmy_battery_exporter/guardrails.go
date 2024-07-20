@@ -23,9 +23,9 @@ func checkForAccess() {
 		log.Printf("$HOME not set")
 		os.Exit(1)
 	}
-	
+
 	cachedir := filepath.Join(home, "Library/Caches/com.apple.findmy.fmipcore")
-	
+
 	needAccessTo(filepath.Join(cachedir, "Devices.data"))
 }
 
@@ -39,12 +39,12 @@ func openFindMyApp() {
 
 func warnForUntestedVersions() {
 	v := macutils.OSVersion()
-	
+
 	if v == nil {
 		log.Printf("couldn't determine macOS version")
 		os.Exit(1)
 	}
-	
+
 	if v[0] != "12" && v[0] != "13" {
 		log.Printf("warning: you're running on an untested macOS version.")
 		log.Printf("warning: this will certainly not work > 14.3.1, and may break in other places.")

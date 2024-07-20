@@ -19,11 +19,11 @@ func TestExecuteAppleScript(t *testing.T) {
 		`end tell`,
 		`copy "the wombles of wimbledon" to stdout`,
 	)
-	
+
 	if err != nil {
 		t.Errorf("ExecuteAppleScript returned error %v", err)
 	}
-	
+
 	o := string(out)
 	if o != "the wombles of wimbledon\n" {
 		t.Errorf("got unexpected output %+v", o)

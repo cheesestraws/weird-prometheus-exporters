@@ -1,10 +1,10 @@
 package main
 
 import (
-	"errors"
-	"path/filepath"
-	"os"
 	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
 )
 
 func fetchDevices() ([]Device, error) {
@@ -12,7 +12,7 @@ func fetchDevices() ([]Device, error) {
 	if home == "" {
 		return nil, errors.New("HOME unset")
 	}
-	
+
 	cachedir := filepath.Join(home, "Library/Caches/com.apple.findmy.fmipcore")
 	j, err := os.ReadFile(filepath.Join(cachedir, "Devices.data"))
 	if err != nil {
@@ -21,6 +21,6 @@ func fetchDevices() ([]Device, error) {
 
 	var ds []Device
 	err = json.Unmarshal(j, &ds)
-		
+
 	return ds, err
 }

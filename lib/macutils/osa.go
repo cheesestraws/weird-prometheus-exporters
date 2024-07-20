@@ -1,8 +1,8 @@
 package macutils
 
 import (
-	"strings"
 	"os/exec"
+	"strings"
 )
 
 func EscapeAppleScriptString(s string) string {
@@ -12,16 +12,16 @@ func EscapeAppleScriptString(s string) string {
 			s, `\`, `\\`,
 		),
 		`"`, `\"`,
-	)	
+	)
 }
 
 func ExecuteAppleScript(script ...string) ([]byte, error) {
 	var args []string
-	
+
 	for _, v := range script {
 		args = append(args, "-e", v)
 	}
-	
+
 	output, err := exec.Command("osascript", args...).Output()
 	return output, err
 }

@@ -26,7 +26,7 @@ func (f *Fetch) Do(ctx context.Context, cli *rtt.Client) (rtt.RTTLocationDetail,
 	if ll == nil {
 		return rtt.RTTLocationDetail{}, nil, errors.New("silently got nil lineup; probably a bug")
 	}
-	
+
 	return ll.Location, LocationLineupToServices(*ll, f.Date), nil
 }
 

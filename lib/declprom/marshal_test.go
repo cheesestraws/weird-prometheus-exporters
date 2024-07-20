@@ -29,7 +29,7 @@ func TestMarshalRoughlyWorks(t *testing.T) {
 		B float64 `prometheus:"F"`
 
 		C map[string]int `prometheus_map:"G" prometheus_map_key:"K"`
-		D map[pair]int `prometheus_map:"H"`
+		D map[pair]int   `prometheus_map:"H"`
 
 		unexported int `prometheus:"ignored"`
 	}{
@@ -53,6 +53,5 @@ func TestMarshalRoughlyWorks(t *testing.T) {
 		},
 	}
 	t.Logf("%s", m.Marshal(s, nil))
-	
-	
+
 }

@@ -87,10 +87,10 @@ func (m *Marshaller) taggedStructToLabels(s reflect.Value) map[string]string {
 		if !fld.IsExported() {
 			continue
 		}
-		
+
 		lname := fld.Tag.Get("prometheus_label")
 		val := fmt.Sprintf("%v", s.Field(i).Interface())
-		accum[lname]=val
+		accum[lname] = val
 	}
 	return accum
 }
@@ -101,13 +101,12 @@ func (m *Marshaller) Marshal(s interface{}, localLabels map[string]string) []byt
 	mtype := func(metric string, t string) {
 		fmt.Fprintf(bs, "# TYPE %s %s\n", metric, t)
 	}
-	
+
 	mhelp := func(metric string, h string) {
 		if h != "" {
 			fmt.Fprintf(bs, "# HELP %s %s\n", metric, h)
 		}
 	}
-
 
 	val := func(metric string, labels string, val interface{}) {
 		var valstr string
@@ -129,7 +128,7 @@ func (m *Marshaller) Marshal(s interface{}, localLabels map[string]string) []byt
 		if !fld.IsExported() {
 			continue
 		}
-		
+
 		help := fld.Tag.Get("prometheus_help")
 
 		// is it a scalar?
