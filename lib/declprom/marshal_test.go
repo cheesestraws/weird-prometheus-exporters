@@ -19,11 +19,17 @@ func TestLabelsRoughlyWork(t *testing.T) {
 }
 
 func TestMarshalRoughlyWorks(t *testing.T) {
+	type pair struct {
+		A string `prometheus_label:"a"`
+		B string `prometheus_label:"b"`
+	}
+
 	s := struct {
-		A int     `prometheus:"E"`
+		A int     `prometheus:"E" prometheus_help:"a field with help"`
 		B float64 `prometheus:"F"`
 
 		C map[string]int `prometheus_map:"G" prometheus_map_key:"K"`
+		D map[pair]int `prometheus_map:"H"`
 
 		unexported int `prometheus:"ignored"`
 	}{
@@ -32,6 +38,10 @@ func TestMarshalRoughlyWorks(t *testing.T) {
 		C: map[string]int{
 			"hello": 3,
 			"world": 4,
+		},
+		D: map[pair]int{
+			pair{"q", "w"}: 1,
+			pair{"e", "r"}: 2,
 		},
 	}
 
@@ -43,4 +53,6 @@ func TestMarshalRoughlyWorks(t *testing.T) {
 		},
 	}
 	t.Logf("%s", m.Marshal(s, nil))
+	
+	
 }

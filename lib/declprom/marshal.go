@@ -79,12 +79,35 @@ func (m *Marshaller) metricName(baseName string, i interface{}) string {
 	return m.MetricNamePrefix + name + m.MetricNameSuffix
 }
 
+func (m *Marshaller) taggedStructToLabels(s reflect.Value) map[string]string {
+	accum := make(map[string]string)
+	myType := s.Type()
+	for i := 0; i < myType.NumField(); i++ {
+		fld := myType.Field(i)
+		if !fld.IsExported() {
+			continue
+		}
+		
+		lname := fld.Tag.Get("prometheus_label")
+		val := fmt.Sprintf("%v", s.Field(i).Interface())
+		accum[lname]=val
+	}
+	return accum
+}
+
 func (m *Marshaller) Marshal(s interface{}, localLabels map[string]string) []byte {
 	bs := &bytes.Buffer{}
 
 	mtype := func(metric string, t string) {
 		fmt.Fprintf(bs, "# TYPE %s %s\n", metric, t)
 	}
+	
+	mhelp := func(metric string, h string) {
+		if h != "" {
+			fmt.Fprintf(bs, "# HELP %s %s\n", metric, h)
+		}
+	}
+
 
 	val := func(metric string, labels string, val interface{}) {
 		var valstr string
@@ -106,6 +129,8 @@ func (m *Marshaller) Marshal(s interface{}, localLabels map[string]string) []byt
 		if !fld.IsExported() {
 			continue
 		}
+		
+		help := fld.Tag.Get("prometheus_help")
 
 		// is it a scalar?
 		basename := fld.Tag.Get("prometheus")
@@ -118,17 +143,38 @@ func (m *Marshaller) Marshal(s interface{}, localLabels map[string]string) []byt
 			)
 			value := theStruct.Field(i).Interface()
 			mtype(realName, "gauge")
+			mhelp(realName, help)
 			val(realName, labels, value)
 		}
 
 		// is it a map?
 		mapname := fld.Tag.Get("prometheus_map")
 		keyname := fld.Tag.Get("prometheus_map_key")
+		// map with a struct key?
+		if mapname != "" && fld.Type.Kind() == reflect.Map && fld.Type.Key().Kind() == reflect.Struct {
+			// Iterate over it
+			realName := m.metricName(mapname, theStruct)
+
+			mtype(realName, "gauge")
+			mhelp(realName, help)
+			iter := theStruct.Field(i).MapRange()
+			for iter.Next() {
+				keyLabels := m.taggedStructToLabels(iter.Key())
+				labels := m.metricLabelString(
+					theStruct,
+					localLabels,
+					keyLabels,
+				)
+				metricValue := iter.Value().Interface()
+				val(realName, labels, metricValue)
+			}
+		}
 		if mapname != "" && keyname != "" && fld.Type.Kind() == reflect.Map {
 			// Iterate over it
 			realName := m.metricName(mapname, theStruct)
 
 			mtype(realName, "gauge")
+			mhelp(realName, help)
 			iter := theStruct.Field(i).MapRange()
 			for iter.Next() {
 				tagValue := fmt.Sprintf("%v", iter.Key().Interface())
