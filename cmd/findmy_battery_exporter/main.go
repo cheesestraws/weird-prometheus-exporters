@@ -29,8 +29,14 @@ func produceMetricsBody() []byte {
 func serve(addr string) {
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
+		
+		body := produceMetricsBody()
+		
+		if *dump {
+			log.Printf("%s", body)
+		}
 
-		w.Write(produceMetricsBody())
+		w.Write(body)
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
