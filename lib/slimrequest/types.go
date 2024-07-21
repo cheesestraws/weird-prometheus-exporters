@@ -39,7 +39,7 @@ type ExtendedServerStatus struct {
 
 type PlayerStatus struct {
 	PlayerID string // not set by JSON, set by client method
-	
+		
 	SyncMaster string `json:"sync_master"`
 	SyncSlaves string `json:"sync_slaves"`
 	
@@ -49,7 +49,7 @@ type PlayerStatus struct {
 	PlayerConnected int `json:"player_connected"`
 	SignalStrength int `json:"signalstrength"`
 	
-	PlaylistCurIndex int `json:"playlist_cur_index"`
+	PlaylistCurIndex any `json:"playlist_cur_index"`
 	PlaylistRepeat int `json:"playlist_repeat"`
 	PlaylistTimestamp float64 `json:"playlist_timestamp"`
 	PlaylistShuffle int `json:"playlist_shuffle"`
