@@ -16,7 +16,7 @@ type ServerStatus struct {
 	TotalDuration float64 `json:"info total duration"`
 }
 
-type PlayerShortDetails struct {
+type PlayerDetails struct {
 	Power       int    `json:"power"`
 	IsPlaying   int    `json:"isplaying"`
 	DisplayType string `json:"displaytype"`
@@ -34,7 +34,7 @@ type PlayerShortDetails struct {
 
 type ExtendedServerStatus struct {
 	ServerStatus
-	Players []PlayerShortDetails `json:"players_loop"`
+	Players []PlayerDetails `json:"players_loop"`
 }
 
 type PlayerStatus struct {
