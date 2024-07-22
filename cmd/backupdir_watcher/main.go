@@ -72,6 +72,8 @@ func gatherBackupAges(paths map[string]string) BackupAges {
 		if err != nil {
 			ages.Error[k] = 1
 			log.Printf("%v: %v", k, err)
+		} else {
+			ages.Error[k] = 0
 		}
 
 		ages.Timestamp[k] = int(t.Unix())
