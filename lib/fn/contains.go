@@ -8,3 +8,13 @@ func Contains[A any](as []A, f func(A) bool) bool {
 	}
 	return false
 }
+
+func Count[A any](as []A, f func(A) bool) int {
+	var c int
+	for _, a := range as {
+		if f(a) {
+			c++
+		}
+	}
+	return c
+}
