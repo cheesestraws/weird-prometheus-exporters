@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
+	"net/http"
 	"os"
-	"sync"
 	"time"
 
+	"github.com/cheesestraws/weird-prometheus-exporters/lib/declprom"
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/truenas"
 )
 
@@ -18,36 +20,63 @@ var prefix *string
 var addr *string
 var dump *bool
 
-var state struct {
-	l    sync.RWMutex
-	sums Summary
-}
-
-func fetch() error {
+func fetch() ([]byte, error) {
 	cli := truenas.NewClient(*baseURL, *user, *pass, nil)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	alerts, err := cli.AlertList(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	pools, err := cli.Pools(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	syncs, err := cli.CloudSyncs(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	state.l.Lock()
-	defer state.l.Unlock()
-	state.sums = summarise(alerts, pools, syncs)
+	sums := summarise(alerts, pools, syncs)
 
-	return nil
+	m := declprom.Marshaller{
+		MetricNamePrefix: *prefix,
+	}
+
+	bs := m.Marshal(sums, map[string]string{
+		"base_url": *baseURL,
+	})
+
+	if *dump {
+		log.Printf("%+s", bs)
+	}
+
+	return bs, nil
+}
+
+func serve(addr string) {
+	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+
+		bs, _ := fetch()
+		if *dump {
+			log.Printf("%s", bs)
+		}
+
+		w.Write(bs)
+	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintf(w, "metrics at /metrics")
+	})
+
+	log.Printf("listening on %s", addr)
+
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
 func main() {
@@ -59,7 +88,9 @@ func main() {
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
 	flag.Parse()
 
-	fetch()
+	if *dump {
+		fetch()
+	}
 
-	log.Printf("%+v", state.sums)
+	serve(*addr)
 }
