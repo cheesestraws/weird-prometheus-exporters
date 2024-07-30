@@ -3,18 +3,22 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"log"
+	"maps"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
-	"net/http"
-	"fmt"
 
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/declprom"
 )
 
 var pathParams multiflag = multiflag{}
+var scbdir *string
+var scbname string
 var dirs map[string]string
 
 func cleanPaths(ps []string) map[string]string {
@@ -45,8 +49,6 @@ func findMostRecent(path string) (time.Time, error) {
 		date := re.FindString(e.Name())
 		if date != "" {
 			t, _ := time.Parse("20060102", date)
-			log.Printf("%s: %v", path, t)
-
 			return t, nil
 		}
 	}
@@ -58,6 +60,9 @@ type BackupAges struct {
 	Timestamp map[string]int `prometheus_map:"timestamp" prometheus_map_key:"backup" prometheus_help:"UNIX timestamp"`
 	Age       map[string]int `prometheus_map:"age" prometheus_map_key:"backup" prometheus_help:"in seconds"`
 	Error     map[string]int `prometheus_map:"errors" prometheus_map_key:"backup"`
+
+	SCBOK     int `prometheus:"scb_lastrun_ok"`
+	SCBErrors int `prometheus:"scb_lastrun_errors"`
 }
 
 func gatherBackupAges(paths map[string]string) BackupAges {
@@ -80,14 +85,81 @@ func gatherBackupAges(paths map[string]string) BackupAges {
 		ages.Age[k] = int(time.Now().Sub(t).Seconds())
 	}
 
+	dealWithSCBLogs(&ages)
+
 	return ages
 }
 
+func dealWithSCBLogs(into *BackupAges) error {
+	seenOK := false
+	errors := 0
+
+	logfile, err := findRecentSCBLog()
+	if err != nil {
+		return err
+	}
+
+	bs, err := os.ReadFile(filepath.Join(*scbdir, "log", logfile))
+	ls := strings.Split(string(bs), "\n")
+	for _, l := range ls {
+		if l == "ok" {
+			seenOK = true
+		} else if l != "" {
+			errors++
+		}
+	}
+
+	if seenOK {
+		into.SCBOK = 1
+	} else {
+		into.SCBOK = 0
+	}
+	into.SCBErrors = errors
+
+	return nil
+}
+
+func findRecentSCBLog() (string, error) {
+	entries, err := os.ReadDir(filepath.Join(*scbdir, "log"))
+	if err != nil {
+		return "", err
+	}
+
+	// files are sorted by filename, so iterate *backwards*
+	for i := len(entries) - 1; i >= 0; i-- {
+		e := entries[i]
+
+		date := re.FindString(e.Name())
+		if date != "" {
+			return e.Name(), nil
+		}
+	}
+
+	return "", errors.New("no log found")
+}
+
+func discoverSCBBackups(into *map[string]string) {
+	if *scbdir == "" {
+		return
+	}
+
+	entries, err := os.ReadDir(*scbdir)
+	if err != nil {
+		log.Printf("scb discovery error: %v", err)
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			(*into)[filepath.Join(scbname, e.Name())] = filepath.Join(*scbdir, e.Name())
+		}
+	}
+}
+
 func makeBody() []byte {
-	ba := gatherBackupAges(dirs)
-	
-	log.Printf("%+v", ba)
-	
+	checkPaths := maps.Clone(dirs)
+	discoverSCBBackups(&checkPaths)
+
+	ba := gatherBackupAges(checkPaths)
+
 	m := declprom.Marshaller{
 		MetricNamePrefix: *prefix,
 	}
@@ -103,7 +175,7 @@ func serve(addr string) {
 		if *dump {
 			log.Printf("%s", bs)
 		}
-		
+
 		w.Write(bs)
 	})
 
@@ -117,13 +189,13 @@ func serve(addr string) {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-
 var prefix *string
 var addr *string
 var dump *bool
 
 func main() {
 	flag.Var(&pathParams, "dir", "directory/ies to watch (use param more than once")
+	scbdir = flag.String("scbdir", "", "scb -into directory to watch")
 	prefix = flag.String("prefix", "backupdir_", "prefix for metric names")
 	addr = flag.String("addr", ":9407", "address to listen on")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
@@ -131,10 +203,14 @@ func main() {
 	flag.Parse()
 
 	dirs = cleanPaths([]string(pathParams))
+	if *scbdir != "" {
+		*scbdir = filepath.Clean(*scbdir)
+		scbname = filepath.Base(*scbdir)
+	}
 
 	if *dump {
 		log.Printf("%s", makeBody())
 	}
-	
+
 	serve(*addr)
 }
