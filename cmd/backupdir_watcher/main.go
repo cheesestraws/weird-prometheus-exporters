@@ -35,18 +35,18 @@ func cleanPaths(ps []string) map[string]string {
 }
 
 type mostRecent struct {
-	path string
+	path             string
 	partiallyErrored bool
 
 	foundNewest bool
-	when time.Time
-	filename string
-	size int64
-	
-	foundPrevious bool
-	previousWhen time.Time
+	when        time.Time
+	filename    string
+	size        int64
+
+	foundPrevious    bool
+	previousWhen     time.Time
 	previousFilename string
-	previousSize int64
+	previousSize     int64
 }
 
 var re *regexp.Regexp = regexp.MustCompile(`\d{8}`)
@@ -69,14 +69,14 @@ func findMostRecent(path string) (mostRecent, error) {
 			m.when, _ = time.Parse("20060102", date)
 			m.filename = e.Name()
 			m.foundNewest = true
-			
+
 			s, err := os.Stat(filepath.Join(path, e.Name()))
 			if err != nil {
-				m.partiallyErrored=true
+				m.partiallyErrored = true
 				log.Printf("err: %v", err)
 			}
 			m.size = s.Size()
-			
+
 			continue
 		} else if date != "" {
 			m.previousWhen, _ = time.Parse("20060102", date)
@@ -85,30 +85,30 @@ func findMostRecent(path string) (mostRecent, error) {
 
 			s, err := os.Stat(filepath.Join(path, e.Name()))
 			if err != nil {
-				m.partiallyErrored=true
+				m.partiallyErrored = true
 				log.Printf("err: %v", err)
 			}
 			m.previousSize = s.Size()
-			
+
 			break
 		}
 	}
 
-	if !m.foundNewest{
+	if !m.foundNewest {
 		return m, errors.New("no backup found")
 	} else {
-		return m,nil
+		return m, nil
 	}
 }
 
 type BackupAges struct {
-	Timestamp map[string]int `prometheus_map:"timestamp" prometheus_map_key:"backup" prometheus_help:"UNIX timestamp"`
-	Age       map[string]int `prometheus_map:"age" prometheus_map_key:"backup" prometheus_help:"in seconds"`
-	Interval  map[string]int `prometheus_map:"last_interval" prometheus_map_key:"backup" prometheus_help:"in seconds"`
-	Size      map[string]int64 `prometheus_map:"size" prometheus_map_key:"backup" prometheus_help:"in bytes"`
-	SizeDelta map[string]int64 `prometheus_map:"size_change" prometheus_map_key:"backup" prometheus_help:"in bytes"`
-	SizeDeltaPct map[string]float64  `prometheus_map:"size_change_pct" prometheus_map_key:"backup" prometheus_help:"percentage"`
-	Error     map[string]int `prometheus_map:"errors" prometheus_map_key:"backup"`
+	Timestamp    map[string]int     `prometheus_map:"timestamp" prometheus_map_key:"backup" prometheus_help:"UNIX timestamp"`
+	Age          map[string]int     `prometheus_map:"age" prometheus_map_key:"backup" prometheus_help:"in seconds"`
+	Interval     map[string]int     `prometheus_map:"last_interval" prometheus_map_key:"backup" prometheus_help:"in seconds"`
+	Size         map[string]int64   `prometheus_map:"size" prometheus_map_key:"backup" prometheus_help:"in bytes"`
+	SizeDelta    map[string]int64   `prometheus_map:"size_change" prometheus_map_key:"backup" prometheus_help:"in bytes"`
+	SizeDeltaPct map[string]float64 `prometheus_map:"size_change_pct" prometheus_map_key:"backup" prometheus_help:"percentage"`
+	Error        map[string]int     `prometheus_map:"errors" prometheus_map_key:"backup"`
 
 	SCBOK     int `prometheus:"scb_lastrun_ok"`
 	SCBErrors int `prometheus:"scb_lastrun_errors"`
@@ -116,13 +116,13 @@ type BackupAges struct {
 
 func gatherBackupAges(paths map[string]string) BackupAges {
 	ages := BackupAges{
-		Timestamp: make(map[string]int),
-		Age:       make(map[string]int),
-		Interval:  make(map[string]int),
-		Size:      make(map[string]int64),
-		SizeDelta: make(map[string]int64),
+		Timestamp:    make(map[string]int),
+		Age:          make(map[string]int),
+		Interval:     make(map[string]int),
+		Size:         make(map[string]int64),
+		SizeDelta:    make(map[string]int64),
 		SizeDeltaPct: make(map[string]float64),
-		Error:     make(map[string]int),
+		Error:        make(map[string]int),
 	}
 
 	for k, v := range paths {
@@ -131,8 +131,8 @@ func gatherBackupAges(paths map[string]string) BackupAges {
 			ages.Error[k] = 1
 			log.Printf("%v: %v", k, err)
 			continue
-		} 
-		
+		}
+
 		if m.partiallyErrored {
 			ages.Error[k] = 1
 		} else {
@@ -144,15 +144,15 @@ func gatherBackupAges(paths map[string]string) BackupAges {
 		if m.foundPrevious {
 			ages.Interval[k] = int(m.when.Sub(m.previousWhen).Seconds())
 		}
-		
+
 		ages.Size[k] = m.size
-		
+
 		if m.foundPrevious {
 			ages.SizeDelta[k] = m.size - m.previousSize
 			if m.previousSize == 0 {
 				m.previousSize = 1
 			}
-			ages.SizeDeltaPct[k] = (float64(m.size - m.previousSize) / float64(m.previousSize)) * 100
+			ages.SizeDeltaPct[k] = (float64(m.size-m.previousSize) / float64(m.previousSize)) * 100
 		}
 	}
 
