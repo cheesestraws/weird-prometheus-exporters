@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cheesestraws/scb/lib/metadata"
+	
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/declprom"
 )
 
@@ -105,6 +107,12 @@ func findMostRecent(path string) (mostRecent, error) {
 	}
 }
 
+type scbmeta struct {
+	Backup string `prometheus_label:"backup"`
+	BackupHost string `prometheus_label:"scb_host"`
+	Kind string `prometheus_label:"scb_kind"`
+}
+
 type BackupAges struct {
 	Timestamp    map[string]int     `prometheus_map:"timestamp" prometheus_map_key:"backup" prometheus_help:"UNIX timestamp"`
 	Age          map[string]int     `prometheus_map:"age" prometheus_map_key:"backup" prometheus_help:"in seconds"`
@@ -118,6 +126,9 @@ type BackupAges struct {
 
 	SCBOK     int `prometheus:"scb_lastrun_ok"`
 	SCBErrors int `prometheus:"scb_lastrun_errors"`
+	
+	SCBFetchTime map[string]float64 `prometheus_map:"scb_fetch_time" prometheus_map_key:"backup" prometheus_help:"in seconds"`
+	SCBMeta map[scbmeta]int `prometheus_map:"scb_meta"`
 }
 
 func gatherBackupAges(paths map[string]string) BackupAges {
@@ -129,6 +140,9 @@ func gatherBackupAges(paths map[string]string) BackupAges {
 		SizeDelta:    make(map[string]int64),
 		SizeDeltaPct: make(map[string]float64),
 		Error:        make(map[string]int),
+		
+		SCBFetchTime: make(map[string]float64),
+		SCBMeta: make(map[scbmeta]int),
 	}
 
 	for k, v := range paths {
@@ -160,6 +174,8 @@ func gatherBackupAges(paths map[string]string) BackupAges {
 			}
 			ages.SizeDeltaPct[k] = (float64(m.size-m.previousSize) / float64(m.previousSize)) * 100
 		}
+		
+		dealWithSCBMetadata(k, filepath.Join(v, m.filename), &ages)
 	}
 
 	dealWithSCBLogs(&ages)
@@ -180,6 +196,26 @@ func gatherOurBackupMetadata(paths map[string]string, into *BackupAges) {
 			into.Active[k] = 0
 		}
 	}
+}
+
+func dealWithSCBMetadata(backup string, latest string, into *BackupAges) error {
+	md, err := metadata.ReadFor(latest)
+	if err != nil {
+		return err
+	}
+	if md == nil {
+		return nil
+	}
+	
+	m := scbmeta{
+		Backup: backup,
+		BackupHost: md.BackupHost,
+		Kind: md.Kind,
+	}
+	
+	into.SCBMeta[m] = 1
+	into.SCBFetchTime[backup] = md.FetchTime.Seconds()
+	return nil
 }
 
 func dealWithSCBLogs(into *BackupAges) error {
