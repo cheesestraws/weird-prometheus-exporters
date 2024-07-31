@@ -113,6 +113,8 @@ type BackupAges struct {
 	SizeDelta    map[string]int64   `prometheus_map:"size_change" prometheus_map_key:"backup" prometheus_help:"in bytes"`
 	SizeDeltaPct map[string]float64 `prometheus_map:"size_change_pct" prometheus_map_key:"backup" prometheus_help:"percentage"`
 	Error        map[string]int     `prometheus_map:"errors" prometheus_map_key:"backup"`
+	
+	Active map[string]int `prometheus_map:"active" prometheus_map_key:"backup"`
 
 	SCBOK     int `prometheus:"scb_lastrun_ok"`
 	SCBErrors int `prometheus:"scb_lastrun_errors"`
@@ -163,6 +165,21 @@ func gatherBackupAges(paths map[string]string) BackupAges {
 	dealWithSCBLogs(&ages)
 
 	return ages
+}
+
+func gatherOurBackupMetadata(paths map[string]string, into *BackupAges) {
+	into.Active = make(map[string]int)
+	
+	for k, v := range paths {
+		inactiveFile := filepath.Join(v, ".inactive")
+		_, err := os.Stat(inactiveFile)
+		
+		if err != nil {
+			into.Active[k] = 1
+		} else {
+			into.Active[k] = 0
+		}
+	}
 }
 
 func dealWithSCBLogs(into *BackupAges) error {
@@ -234,6 +251,7 @@ func makeBody() []byte {
 	discoverSCBBackups(&checkPaths)
 
 	ba := gatherBackupAges(checkPaths)
+	gatherOurBackupMetadata(checkPaths, &ba)
 
 	m := declprom.Marshaller{
 		MetricNamePrefix: *prefix,
