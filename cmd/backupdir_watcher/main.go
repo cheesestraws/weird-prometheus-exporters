@@ -63,6 +63,10 @@ func findMostRecent(path string) (mostRecent, error) {
 	// files are sorted by filename, so iterate *backwards*
 	for i := len(entries) - 1; i >= 0; i-- {
 		e := entries[i]
+		
+		if strings.HasSuffix(e.Name(), ".scbmeta") {
+			continue
+		}
 
 		date := re.FindString(e.Name())
 		if date != "" && !m.foundNewest {
