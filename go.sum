@@ -2,5 +2,7 @@ github.com/cheesestraws/gortt v0.0.0-20240706110747-23ddea4c83ef h1:Nj8/J7S2L6oR
 github.com/cheesestraws/gortt v0.0.0-20240706110747-23ddea4c83ef/go.mod h1:0EjwqTnWeUsZdZf8LCjmzjZhn/2B9gPkUAQ+MQGXASc=
 github.com/cheesestraws/scb v0.0.0-20240731220937-d77c4b897a33 h1:Fcs5+Ms0RV0TiAvwIElaKyG/LlDzl1CyUCv4nJNN0OQ=
 github.com/cheesestraws/scb v0.0.0-20240731220937-d77c4b897a33/go.mod h1:xT5Z5V8BqSNtZg42b6rqxRdouCQ+On8qZDPfm9V0Wv4=
+github.com/cheesestraws/scb v0.0.0-20240731224359-e29109e5981a h1:CI4AsRvFJJZjF48EikGhk4PfkSB3PhBmFbxtglBVobg=
+github.com/cheesestraws/scb v0.0.0-20240731224359-e29109e5981a/go.mod h1:/dLbke2Phn2od/STmoKoyKHJ/6oM4/0tp1vovHq4HQY=
 golang.org/x/net v0.27.0 h1:5K3Njcw06/l2y9vpGCSdcxWOYHOUk3dVNGDXN+FvAys=
 golang.org/x/net v0.27.0/go.mod h1:dDi0PyhWNoiUOrAS8uXv/vnScO4wnHQO4mj9fn/RytE=
