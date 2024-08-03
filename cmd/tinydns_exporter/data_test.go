@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
@@ -48,10 +49,63 @@ func TestGetSOAs(t *testing.T) {
 `, "\n")
 	soas := getSOAs(testFile)
 	if !reflect.DeepEqual(soas, map[string]struct{}{
-		"example.com": struct{}{},
+		"example.com":  struct{}{},
 		"example2.com": struct{}{},
 	}) {
 		t.Errorf("getSOAs returned bad data")
 	}
+}
 
+func TestGetNS(t *testing.T) {
+	nses, err := getNS(context.Background(), "example.com")
+	if err != nil {
+		t.Errorf("getNS shouldn't return error %v", err)
+	}
+	if len(nses) == 0 {
+		t.Errorf("example.com should always have nameservers")
+	}
+	
+	nses, _ = getNS(context.Background(), "example.invalid")
+	if len(nses) != 0 {
+		t.Errorf("anything under .invalid should never have nameservers")
+	}
+}
+
+func TestDomainStatus(t *testing.T) {
+	s := domainStatus(context.Background(), "example.invalid", ".example.com")
+	if s != DomainError {
+		t.Errorf(".invalid domains shouldn't have NSes")
+	}
+	
+	s = domainStatus(context.Background(), "example.com", ".iana-servers.net")
+	if s != DomainHasOurNS {
+		t.Errorf("example.com should have IANA nameservers")
+	}
+	
+	s = domainStatus(context.Background(), "example.com", ".ns.ecliptiq.co.uk")
+	if s != DomainDoesNotHaveOurNS {
+		t.Errorf("example.com should not have ecliptiq nameservers")
+	}
+}
+
+func TestSOANSes(t *testing.T) {
+	testFile := strings.Split(`
+.example.com::a.ns.ecliptiq.co.uk:360
+&example.com::b.ns.ecliptiq.co.uk:360
++foo.example.com:192.168.0.1
++bar.example.com:192.168.0.2
++woo.example.com:192.168.0.3
+.foo.invalid::a.ns.ecliptiq.co.uk:360
+&foo.invalid::b.ns.ecliptiq.co.uk:360
+`, "\n")
+
+	ds := checkSOANS(context.Background(), testFile, ".iana-servers.net")
+	expected := map[string]DomainStatus {
+		"example.com": DomainHasOurNS,
+		"foo.invalid": DomainError,
+	}
+	
+	if !reflect.DeepEqual(ds, expected) {
+		t.Errorf("checkSOANS didn't return expected value")
+	}
 }
