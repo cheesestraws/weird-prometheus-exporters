@@ -61,6 +61,17 @@ type DatabaseSummary struct {
 	RecordTypes   map[DomainAndType]int   `prometheus_map:"record_types"`
 }
 
+func getSOAsFromFile(dataFile string) (map[string]struct{}, error) {
+	bs, err := os.ReadFile(dataFile)
+	if err != nil {
+		return nil, err
+	}
+
+	lines := strings.Split(string(bs), "\n")
+
+	return getSOAs(lines), nil
+}
+
 func checkData(ctx context.Context, dataFile string, ourSuffix string) (DatabaseSummary, error) {
 	var s DatabaseSummary
 

@@ -22,16 +22,18 @@ func (m Maybe[T]) Get() (T, bool) {
 	return m.t, m.ok
 }
 
-func (m Maybe[T]) Range(f func(t T)) {
+func (m Maybe[T]) Range(f func(t T)) Maybe[T] {
 	if m.ok {
 		f(m.t)
 	}
+	return m
 }
 
-func (m Maybe[T]) OrElse(f func()) {
+func (m Maybe[T]) OrElse(f func()) Maybe[T] {
 	if !m.ok {
 		f()
 	}
+	return m
 }
 
 func (m Maybe[T]) Or(v T) T {
