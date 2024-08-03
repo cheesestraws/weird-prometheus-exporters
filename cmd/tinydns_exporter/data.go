@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"net"
 	"os"
 	"strings"
@@ -110,6 +111,9 @@ func getNS(ctx context.Context, domain string) ([]string, error) {
 }
 
 func domainStatus(ctx context.Context, domain string, ourSuffix string) DomainStatus {
+	if *verbose {
+		log.Printf("checking NS records for %v", domain)
+	}
 	nses, err := getNS(ctx, domain)
 	if err != nil {
 		return DomainError
