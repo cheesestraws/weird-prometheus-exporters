@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -64,7 +65,7 @@ func TestGetNS(t *testing.T) {
 	if len(nses) == 0 {
 		t.Errorf("example.com should always have nameservers")
 	}
-	
+
 	nses, _ = getNS(context.Background(), "example.invalid")
 	if len(nses) != 0 {
 		t.Errorf("anything under .invalid should never have nameservers")
@@ -76,12 +77,12 @@ func TestDomainStatus(t *testing.T) {
 	if s != DomainError {
 		t.Errorf(".invalid domains shouldn't have NSes")
 	}
-	
+
 	s = domainStatus(context.Background(), "example.com", ".iana-servers.net")
 	if s != DomainHasOurNS {
 		t.Errorf("example.com should have IANA nameservers")
 	}
-	
+
 	s = domainStatus(context.Background(), "example.com", ".ns.ecliptiq.co.uk")
 	if s != DomainDoesNotHaveOurNS {
 		t.Errorf("example.com should not have ecliptiq nameservers")
@@ -100,12 +101,28 @@ func TestSOANSes(t *testing.T) {
 `, "\n")
 
 	ds := checkSOANS(context.Background(), testFile, ".iana-servers.net")
-	expected := map[string]DomainStatus {
+	expected := map[string]DomainStatus{
 		"example.com": DomainHasOurNS,
 		"foo.invalid": DomainError,
 	}
-	
+
 	if !reflect.DeepEqual(ds, expected) {
 		t.Errorf("checkSOANS didn't return expected value")
 	}
+}
+
+func TestCheckData(t *testing.T) {
+	dataFile := os.Getenv("DATAFILE")
+	suffix := os.Getenv("SUFFIX")
+
+	if dataFile == "" || suffix == "" {
+		t.Skipf("to manually check CheckData, set DATAFILE and SUFFIX")
+	}
+
+	d, err := checkData(context.Background(), dataFile, suffix)
+	if err != nil {
+		t.Errorf("checkData failed: %v", err)
+	}
+
+	t.Logf("%+v", d)
 }

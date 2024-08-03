@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"net"
+	"os"
 	"strings"
 
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/fn"
 )
 
 type DomainStatus int
+
 const (
 	DomainUnknown DomainStatus = iota
 	DomainError
@@ -19,9 +21,9 @@ const (
 )
 
 var dsStrings = map[DomainStatus]string{
-	DomainError: "Error",
-	DomainNoNSes: "No NS records",
-	DomainHasOurNS: "Our NS records",
+	DomainError:            "Error",
+	DomainNoNSes:           "No NS records",
+	DomainHasOurNS:         "Our NS records",
 	DomainDoesNotHaveOurNS: "Only other NS records",
 }
 
@@ -42,11 +44,42 @@ func firstfield(line string) fn.Maybe[string] {
 	return fn.Present(fld)
 }
 
-type DatabaseSummary struct {
+type DomainAndStatus struct {
+	Domain string       `prometheus_label:"domain"`
+	Status DomainStatus `prometheus_label:"status"`
 }
 
-func checkData(dataFile string) (interface{}, error) {
-	return nil, nil
+type DomainAndType struct {
+	Domain string `prometheus_label:"domain"`
+	Type   RRType `prometheus_label:"type"`
+}
+
+type DatabaseSummary struct {
+	DomainStatus  map[DomainAndStatus]int `prometheus_map:"domain_status"`
+	StatusSummary map[DomainStatus]int    `prometheus_map:"status_summary" prometheus_map_key:"status"`
+	RecordTypes   map[DomainAndType]int   `prometheus_map:"record_types"`
+}
+
+func checkData(ctx context.Context, dataFile string, ourSuffix string) (DatabaseSummary, error) {
+	var s DatabaseSummary
+
+	bs, err := os.ReadFile(dataFile)
+	if err != nil {
+		return s, err
+	}
+
+	lines := strings.Split(string(bs), "\n")
+
+	// Check SOA statuses
+	statuses := checkSOANS(ctx, lines, ourSuffix)
+	s.DomainStatus = fn.Mapmap(statuses,
+		func(k string, v DomainStatus) (DomainAndStatus, int) {
+			return DomainAndStatus{k, v}, 1
+		})
+	s.StatusSummary = fn.CountMapValues(statuses)
+	s.RecordTypes = summariseRecordTypes(lines)
+
+	return s, nil
 }
 
 func getSOAs(lines []string) map[string]struct{} {
@@ -84,13 +117,13 @@ func domainStatus(ctx context.Context, domain string, ourSuffix string) DomainSt
 	if len(nses) == 0 {
 		return DomainNoNSes
 	}
-	
+
 	for _, ns := range nses {
 		if strings.HasSuffix(strings.TrimSuffix(ns, "."), ourSuffix) {
 			return DomainHasOurNS
 		}
 	}
-	
+
 	return DomainDoesNotHaveOurNS
 }
 
@@ -99,4 +132,41 @@ func checkSOANS(ctx context.Context, lines []string, ourSuffix string) map[strin
 	return fn.Mapmap(soas, func(k string, _ struct{}) (string, DomainStatus) {
 		return k, domainStatus(ctx, k, ourSuffix)
 	})
+}
+
+func findSuffix(s string, suffixes map[string]struct{}) fn.Maybe[string] {
+	for suffix := range suffixes {
+		if strings.HasSuffix(s, suffix) {
+			return fn.Present(suffix)
+		}
+	}
+
+	return fn.Absent[string]()
+}
+
+func summariseRecordTypes(lines []string) map[DomainAndType]int {
+	m := make(map[DomainAndType]int)
+	domains := getSOAs(lines)
+
+	for _, line := range lines {
+		// Do we care about this line?
+		rrs := TinyDNSLineToRRTypes(line)
+		if len(rrs) == 0 {
+			continue
+		}
+
+		// Do we even have an FQDN?
+		firstfield(line).Range(func(fqdn string) {
+			// What domain does this line belong to?
+
+			domain := findSuffix(fqdn, domains).Or("(unattached)")
+
+			// increment counters for each rr type
+			for _, rr := range rrs {
+				m[DomainAndType{domain, rr}]++
+			}
+		})
+	}
+
+	return m
 }

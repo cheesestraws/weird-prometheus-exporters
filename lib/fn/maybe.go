@@ -33,3 +33,11 @@ func (m Maybe[T]) OrElse(f func()) {
 		f()
 	}
 }
+
+func (m Maybe[T]) Or(v T) T {
+	if m.ok {
+		return m.t
+	} else {
+		return v
+	}
+}
