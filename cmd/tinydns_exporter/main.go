@@ -15,9 +15,10 @@ var suffix *string
 var verbose *bool
 var addr *string
 var dump *bool
+var endpoint *string
 
 func serve(addr string) {
-	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(*endpoint, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 
 		body := getBody()
@@ -31,7 +32,7 @@ func serve(addr string) {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "metrics at /metrics")
+		fmt.Fprintf(w, "ok")
 	})
 
 	log.Printf("listening on %s", addr)
@@ -48,6 +49,8 @@ func main() {
 	suffix = flag.String("suffix", "", "a common suffix for our dns server names")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
 	verbose = flag.Bool("v", false, "verbose mode")
+	endpoint = flag.String("endpoint", "/metrics", "the metrics endpoint")
+
 	flag.Parse()
 
 	if *datafile == "" && *datacdb == "" && *servicedir == "" && *logdir == "" {

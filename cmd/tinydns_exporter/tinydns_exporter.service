@@ -1,0 +1,11 @@
+[Unit]
+Description=TinyDNS prometheus exporter
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/tinydns_exporter -data /etc/tinydns/root/svndns/data -datacdb /etc/tinydns/root/data.cdb -logdir /etc/tinydns/log/main -servicedir /etc/tinydns -suffix ns.ecliptiq.co.uk -endpoint /metrics
+ExecStop=/bin/kill QUIT $MAINPID
+
+[Install]
+WantedBy=multi-user.target
