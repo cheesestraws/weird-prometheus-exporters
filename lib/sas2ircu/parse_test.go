@@ -22,7 +22,7 @@ SAS2IRCU: Utility Completed Successfully.
 	
 	stats := parseSAS2IRCUList([]byte(output))	
 	
-	expected := map[string]SAS2IRCUAdapter{
+	expected := map[string]Adapter{
 		"0": {
 			Index: "0",
 			AdapterType: "SAS2008",

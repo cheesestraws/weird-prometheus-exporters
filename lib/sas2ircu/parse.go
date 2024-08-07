@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-type SAS2IRCUAdapter struct {
+type Adapter struct {
 	Index string
 	AdapterType string
 	PCIAddress string
@@ -13,8 +13,8 @@ type SAS2IRCUAdapter struct {
 
 var listLine = regexp.MustCompile(`^(\d+)\s+(\w+)\s+\w+\s+\w+\s+([0-9a-fA-Fh:]+)`)
 
-func parseSAS2IRCUList(output []byte) map[string]SAS2IRCUAdapter {
-	ret := make(map[string]SAS2IRCUAdapter)
+func parseSAS2IRCUList(output []byte) map[string]Adapter {
+	ret := make(map[string]Adapter)
 	lines := strings.Split(string(output), "\n")
 	
 	for _, l := range lines {
@@ -25,7 +25,7 @@ func parseSAS2IRCUList(output []byte) map[string]SAS2IRCUAdapter {
 			continue
 		}
 		
-		stats := SAS2IRCUAdapter{
+		stats := Adapter{
 			Index: matches[1],
 			AdapterType: matches[2],
 			PCIAddress: matches[3],

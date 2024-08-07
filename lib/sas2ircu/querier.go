@@ -9,7 +9,7 @@ type Querier struct {
 }
 
 type Response struct {
-	Adapters map[string]SAS2IRCUAdapter
+	Adapters map[string]Adapter
 	Devices map[string]Devices
 }
 
