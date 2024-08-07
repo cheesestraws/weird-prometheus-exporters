@@ -35,3 +35,87 @@ func parseSAS2IRCUList(output []byte) map[string]SAS2IRCUAdapter {
 	
 	return ret
 }
+
+var extractThreeLetterCode = regexp.MustCompile(`\(([A-Z]+)\)`)
+
+type IRStatus int
+const (
+	IRStatusUnknown IRStatus = iota
+	IRStatusOkay
+	IRStatusDegraded
+	IRStatusFailed
+	IRStatusMissing
+	IRStatusInitializing
+	IRStatusOnline
+)
+
+func irStatusFromString(s string) IRStatus {
+	matches := extractThreeLetterCode.FindStringSubmatch(s)
+	if matches == nil {
+		return IRStatusUnknown
+	}
+	
+	switch matches[1] {
+		case "OKY": return IRStatusOkay
+		case "DGD": return IRStatusDegraded
+		case "FLD": return IRStatusFailed
+		case "MIS": return IRStatusMissing
+		case "INIT": return IRStatusInitializing
+		case "ONL": return IRStatusOnline
+	}
+	return IRStatusUnknown
+}
+
+type IR struct {
+	VolumeID string
+	Status IRStatus
+}
+
+type PDStatus int
+const (
+	PDStatusUnknown PDStatus = iota
+	PDStatusOnline
+	PDStatusHotSpare
+	PDStatusReady
+	PDStatusAvailable
+	PDStatusFailed
+	PDStatusMissing
+	PDStatusStandby
+	PDStatusOutOfSync
+	PDStatusDegraded
+	PDStatusRebuilding
+	PDStatusOptimal
+)
+
+func pdStatusFromString(s string) PDStatus {
+	matches := extractThreeLetterCode.FindStringSubmatch(s)
+	if matches == nil {
+		return PDStatusUnknown
+	}
+	
+	switch matches[1] {
+		case "ONL": return PDStatusOnline
+		case "HSP": return PDStatusHotSpare
+		case "RDY": return PDStatusReady
+		case "AVL": return PDStatusAvailable
+		case "FLD": return PDStatusFailed
+		case "MIS": return PDStatusMissing
+		case "SBY": return PDStatusStandby
+		case "OSY": return PDStatusOutOfSync
+		case "DGD": return PDStatusDegraded
+		case "RBLD": return PDStatusRebuilding
+		case "OPT": return PDStatusOptimal
+
+	}
+	return PDStatusUnknown
+}
+
+
+type PhysicalDevice struct {
+	Enclosure string
+	Slot string
+	State string
+	SerialNumber string
+	Protocol string
+	DriveType string
+}

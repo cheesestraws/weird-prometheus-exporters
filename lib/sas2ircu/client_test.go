@@ -39,3 +39,33 @@ SAS2IRCU: Utility Completed Successfully.
 		t.Errorf("didn't parse list properly")
 	}
 }
+
+func TestIRStatusFromString(t *testing.T) {
+	line := "floop (OKY) fleep"
+	status := irStatusFromString(line)
+	if status != IRStatusOkay {
+		t.Errorf("where's my ok")
+	}
+	
+	line = "floop (DGD) fleep"
+	status = irStatusFromString(line)
+	if status != IRStatusDegraded {
+		t.Errorf("where's my degraded")
+	}
+}
+
+
+func TestPDStatusFromString(t *testing.T) {
+	line := "floop (OPT) fleep"
+	status := pdStatusFromString(line)
+	if status != PDStatusOptimal {
+		t.Errorf("where's my ok")
+	}
+	
+	line = "floop (DGD) fleep"
+	status = pdStatusFromString(line)
+	if status != PDStatusDegraded {
+		t.Errorf("where's my degraded")
+	}
+
+}
