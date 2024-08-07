@@ -110,12 +110,89 @@ func pdStatusFromString(s string) PDStatus {
 	return PDStatusUnknown
 }
 
-
 type PhysicalDevice struct {
+	DeviceIsA string
 	Enclosure string
 	Slot string
-	State string
+	State PDStatus
 	SerialNumber string
 	Protocol string
 	DriveType string
+}
+
+type Devices struct {
+	IRs []IR
+	PhysicalDevices []PhysicalDevice
+}
+
+var dataLineRegex = regexp.MustCompile(`^\s+([^\s].*[^\s])\s+:\s+(.*)$`)
+var irLineRegex = regexp.MustCompile(`^IR volume \d`)
+var pdLineRegex = regexp.MustCompile(`^Device is a (.*)$`)
+var dashedLineRegex = regexp.MustCompile(`^----`)
+
+func parseSAS2IRCUDisplay(output []byte) Devices {
+	var physDevices []PhysicalDevice
+	var irs []IR
+	
+	kvs := make(map[string]string)
+	var isIRVolume bool
+	var isPhysicalDevice bool
+	
+	flush := func() {		
+		if isPhysicalDevice {
+			pd := PhysicalDevice{
+				DeviceIsA: kvs["DeviceIsA"],
+				Enclosure: kvs["Enclosure #"],
+				Slot: kvs["Slot #"],
+				State: pdStatusFromString(kvs["State"]),
+				SerialNumber: kvs["Serial No"],
+				Protocol: kvs["Protocol"],
+				DriveType: kvs["Drive Type"],
+			}
+			physDevices = append(physDevices, pd)
+		}
+		
+		if isIRVolume {
+			ir := IR{
+				VolumeID: kvs["Volume ID"],
+				Status: irStatusFromString(kvs["Status of volume"]),
+			}
+			irs = append(irs, ir)
+		}
+		
+			
+		isIRVolume = false
+		isPhysicalDevice = false
+		kvs = make(map[string]string)
+	}
+	
+	lines := strings.Split(string(output), "\n")
+	
+	for _, line := range lines {
+	
+		// is it an IR header line?
+		matches := irLineRegex.FindStringSubmatch(line)
+		if matches != nil {
+			flush()
+			isIRVolume = true
+			continue
+		}
+		
+		matches = pdLineRegex.FindStringSubmatch(line)
+		if matches != nil {
+			flush()
+			isPhysicalDevice = true
+			kvs["DeviceIsA"] = matches[1]
+		}
+		
+		// is it a data line?
+		matches = dataLineRegex.FindStringSubmatch(line)
+		if matches != nil {
+			kvs[matches[1]] = matches[2]
+		}
+	}
+	
+	flush()
+	
+	return Devices{irs, physDevices}
 }
