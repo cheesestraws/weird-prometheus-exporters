@@ -28,8 +28,8 @@ type PhysicalDevice struct {
 
 type Summary struct {
 	AdapterDetails       map[Adapter]int                      `prometheus_map:"adapter_details"`
-	IRStatus             map[IR]sas2ircu.IRStatus             `prometheus_map:"ir_status"`
-	PhysicalDeviceStatus map[PhysicalDevice]sas2ircu.PDStatus `prometheus_map:"physical_device_status"`
+	IRStatus             map[IR]sas2ircu.IRStatus             `prometheus_map:"ir_status" prometheus_help:"0 => Unknown, 1 => OK, 2 => Degraded, 3 => Failed, 4 => Missing, 5 => Initialising, 6 => Online"`
+	PhysicalDeviceStatus map[PhysicalDevice]sas2ircu.PDStatus `prometheus_map:"physical_device_status" prometheus_help:"0 => Unknown, 1 => Online, 2 => Hotspare, 3 => Ready, 4 => Available, 5 => Failed, 6 => Missing, 7 => Standby, 8 => OutOfSync, 9 => Degraded, 10 => Rebuilding, 11 => Optimal"`
 
 	FetchError int `prometheus:"in_fetch_error_state"`
 }
