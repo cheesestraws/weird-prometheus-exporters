@@ -21,16 +21,23 @@ import (
 var pathParams multiflag = multiflag{}
 var scbdir *string
 var scbname string
-var dirs map[string]string
+var dirs map[string]BackupPath
 
-func cleanPaths(ps []string) map[string]string {
-	pm := make(map[string]string)
+type BackupPath struct {
+	Path string
+	SCB bool
+}
+
+func makePathMap(ps []string) map[string]BackupPath {
+	pm := make(map[string]BackupPath)
 
 	for _, p := range ps {
 		path := filepath.Clean(p)
 		basename := filepath.Base(p)
 
-		pm[basename] = path
+		pm[basename] = BackupPath{
+			Path: path,
+		}
 	}
 
 	return pm
@@ -53,11 +60,11 @@ type mostRecent struct {
 
 var re *regexp.Regexp = regexp.MustCompile(`\d{8}`)
 
-func findMostRecent(path string) (mostRecent, error) {
+func findMostRecent(path BackupPath) (mostRecent, error) {
 	var m mostRecent
-	m.path = path
+	m.path = path.Path
 
-	entries, err := os.ReadDir(path)
+	entries, err := os.ReadDir(path.Path)
 	if err != nil {
 		return m, err
 	}
@@ -76,7 +83,7 @@ func findMostRecent(path string) (mostRecent, error) {
 			m.filename = e.Name()
 			m.foundNewest = true
 
-			s, err := os.Stat(filepath.Join(path, e.Name()))
+			s, err := os.Stat(filepath.Join(path.Path, e.Name()))
 			if err != nil {
 				m.partiallyErrored = true
 				log.Printf("err: %v", err)
@@ -89,7 +96,7 @@ func findMostRecent(path string) (mostRecent, error) {
 			m.previousFilename = e.Name()
 			m.foundPrevious = true
 
-			s, err := os.Stat(filepath.Join(path, e.Name()))
+			s, err := os.Stat(filepath.Join(path.Path, e.Name()))
 			if err != nil {
 				m.partiallyErrored = true
 				log.Printf("err: %v", err)
@@ -131,7 +138,7 @@ type BackupAges struct {
 	SCBMeta map[scbmeta]int `prometheus_map:"scb_meta"`
 }
 
-func gatherBackupAges(paths map[string]string) BackupAges {
+func gatherBackupAges(paths map[string]BackupPath) BackupAges {
 	ages := BackupAges{
 		Timestamp:    make(map[string]int),
 		Age:          make(map[string]int),
@@ -175,7 +182,9 @@ func gatherBackupAges(paths map[string]string) BackupAges {
 			ages.SizeDeltaPct[k] = (float64(m.size-m.previousSize) / float64(m.previousSize)) * 100
 		}
 		
-		dealWithSCBMetadata(k, filepath.Join(v, m.filename), &ages)
+		if v.SCB {
+			dealWithSCBMetadata(k, filepath.Join(v.Path, m.filename), &ages)
+		}
 	}
 
 	dealWithSCBLogs(&ages)
@@ -183,11 +192,11 @@ func gatherBackupAges(paths map[string]string) BackupAges {
 	return ages
 }
 
-func gatherOurBackupMetadata(paths map[string]string, into *BackupAges) {
+func gatherOurBackupMetadata(paths map[string]BackupPath, into *BackupAges) {
 	into.Active = make(map[string]int)
 	
 	for k, v := range paths {
-		inactiveFile := filepath.Join(v, ".inactive")
+		inactiveFile := filepath.Join(v.Path, ".inactive")
 		_, err := os.Stat(inactiveFile)
 		
 		if err != nil {
@@ -266,7 +275,7 @@ func findRecentSCBLog() (string, error) {
 	return "", errors.New("no log found")
 }
 
-func discoverSCBBackups(into *map[string]string) {
+func discoverSCBBackups(into *map[string]BackupPath) {
 	if *scbdir == "" {
 		return
 	}
@@ -277,7 +286,10 @@ func discoverSCBBackups(into *map[string]string) {
 	}
 	for _, e := range entries {
 		if e.IsDir() {
-			(*into)[filepath.Join(scbname, e.Name())] = filepath.Join(*scbdir, e.Name())
+			(*into)[filepath.Join(scbname, e.Name())] = BackupPath{
+				Path: filepath.Join(*scbdir, e.Name()),
+				SCB: true,
+			}
 		}
 	}
 }
@@ -331,7 +343,7 @@ func main() {
 
 	flag.Parse()
 
-	dirs = cleanPaths([]string(pathParams))
+	dirs = makePathMap([]string(pathParams))
 	if *scbdir != "" {
 		*scbdir = filepath.Clean(*scbdir)
 		scbname = filepath.Base(*scbdir)
