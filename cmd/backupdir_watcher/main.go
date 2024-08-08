@@ -10,22 +10,26 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/cheesestraws/scb/lib/metadata"
-	
+
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/declprom"
 )
 
 var pathParams multiflag = multiflag{}
 var scbdir *string
 var scbname string
+var ghettoVCBDir *string
+var ghettoVCBName string
 var dirs map[string]BackupPath
 
 type BackupPath struct {
-	Path string
-	SCB bool
+	Path      string
+	SCB       bool
+	GhettoVCB bool
 }
 
 func makePathMap(ps []string) map[string]BackupPath {
@@ -59,10 +63,21 @@ type mostRecent struct {
 }
 
 var re *regexp.Regexp = regexp.MustCompile(`\d{8}`)
+var ghettoVCBRE *regexp.Regexp = regexp.MustCompile(`\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}`)
 
 func findMostRecent(path BackupPath) (mostRecent, error) {
 	var m mostRecent
 	m.path = path.Path
+
+	dateRE := re
+	if path.GhettoVCB {
+		dateRE = ghettoVCBRE
+	}
+
+	dateFormat := "20060102"
+	if path.GhettoVCB {
+		dateFormat = "2006-01-02_15-04-05"
+	}
 
 	entries, err := os.ReadDir(path.Path)
 	if err != nil {
@@ -72,14 +87,26 @@ func findMostRecent(path BackupPath) (mostRecent, error) {
 	// files are sorted by filename, so iterate *backwards*
 	for i := len(entries) - 1; i >= 0; i-- {
 		e := entries[i]
-		
+
 		if strings.HasSuffix(e.Name(), ".scbmeta") {
 			continue
 		}
 
-		date := re.FindString(e.Name())
+		// if this is a GhettoVCB dir, we only want files that have a
+		// corresponding .ok file
+		if path.GhettoVCB && !strings.HasSuffix(e.Name(), ".gz") {
+			continue
+		}
+		okName := strings.TrimSuffix(e.Name(), ".gz") + ".ok"
+		if path.GhettoVCB && !slices.ContainsFunc(entries, func(e os.DirEntry) bool {
+			return e.Name() == okName
+		}) {
+			continue
+		}
+
+		date := dateRE.FindString(e.Name())
 		if date != "" && !m.foundNewest {
-			m.when, _ = time.Parse("20060102", date)
+			m.when, _ = time.Parse(dateFormat, date)
 			m.filename = e.Name()
 			m.foundNewest = true
 
@@ -92,7 +119,7 @@ func findMostRecent(path BackupPath) (mostRecent, error) {
 
 			continue
 		} else if date != "" {
-			m.previousWhen, _ = time.Parse("20060102", date)
+			m.previousWhen, _ = time.Parse(dateFormat, date)
 			m.previousFilename = e.Name()
 			m.foundPrevious = true
 
@@ -115,9 +142,9 @@ func findMostRecent(path BackupPath) (mostRecent, error) {
 }
 
 type scbmeta struct {
-	Backup string `prometheus_label:"backup"`
+	Backup     string `prometheus_label:"backup"`
 	BackupHost string `prometheus_label:"scb_host"`
-	Kind string `prometheus_label:"scb_kind"`
+	Kind       string `prometheus_label:"scb_kind"`
 }
 
 type BackupAges struct {
@@ -128,14 +155,14 @@ type BackupAges struct {
 	SizeDelta    map[string]int64   `prometheus_map:"size_change" prometheus_map_key:"backup" prometheus_help:"in bytes"`
 	SizeDeltaPct map[string]float64 `prometheus_map:"size_change_pct" prometheus_map_key:"backup" prometheus_help:"percentage"`
 	Error        map[string]int     `prometheus_map:"errors" prometheus_map_key:"backup"`
-	
+
 	Active map[string]int `prometheus_map:"active" prometheus_map_key:"backup"`
 
 	SCBOK     int `prometheus:"scb_lastrun_ok"`
 	SCBErrors int `prometheus:"scb_lastrun_errors"`
-	
+
 	SCBFetchTime map[string]float64 `prometheus_map:"scb_fetch_time" prometheus_map_key:"backup" prometheus_help:"in seconds"`
-	SCBMeta map[scbmeta]int `prometheus_map:"scb_meta"`
+	SCBMeta      map[scbmeta]int    `prometheus_map:"scb_meta"`
 }
 
 func gatherBackupAges(paths map[string]BackupPath) BackupAges {
@@ -147,9 +174,9 @@ func gatherBackupAges(paths map[string]BackupPath) BackupAges {
 		SizeDelta:    make(map[string]int64),
 		SizeDeltaPct: make(map[string]float64),
 		Error:        make(map[string]int),
-		
+
 		SCBFetchTime: make(map[string]float64),
-		SCBMeta: make(map[scbmeta]int),
+		SCBMeta:      make(map[scbmeta]int),
 	}
 
 	for k, v := range paths {
@@ -181,9 +208,13 @@ func gatherBackupAges(paths map[string]BackupPath) BackupAges {
 			}
 			ages.SizeDeltaPct[k] = (float64(m.size-m.previousSize) / float64(m.previousSize)) * 100
 		}
-		
+
 		if v.SCB {
 			dealWithSCBMetadata(k, filepath.Join(v.Path, m.filename), &ages)
+		}
+		
+		if v.GhettoVCB {
+			fakeGhettoVCBMetadata(k, filepath.Join(v.Path, m.filename), &ages)
 		}
 	}
 
@@ -194,11 +225,11 @@ func gatherBackupAges(paths map[string]BackupPath) BackupAges {
 
 func gatherOurBackupMetadata(paths map[string]BackupPath, into *BackupAges) {
 	into.Active = make(map[string]int)
-	
+
 	for k, v := range paths {
 		inactiveFile := filepath.Join(v.Path, ".inactive")
 		_, err := os.Stat(inactiveFile)
-		
+
 		if err != nil {
 			into.Active[k] = 1
 		} else {
@@ -215,15 +246,25 @@ func dealWithSCBMetadata(backup string, latest string, into *BackupAges) error {
 	if md == nil {
 		return nil
 	}
-	
+
+	m := scbmeta{
+		Backup:     backup,
+		BackupHost: md.BackupHost,
+		Kind:       md.Kind,
+	}
+
+	into.SCBMeta[m] = 1
+	into.SCBFetchTime[backup] = md.FetchTime.Seconds()
+	return nil
+}
+
+func fakeGhettoVCBMetadata(backup string, latest string, into *BackupAges) error {
 	m := scbmeta{
 		Backup: backup,
-		BackupHost: md.BackupHost,
-		Kind: md.Kind,
+		Kind: "VMware VM",
 	}
 	
 	into.SCBMeta[m] = 1
-	into.SCBFetchTime[backup] = md.FetchTime.Seconds()
 	return nil
 }
 
@@ -288,7 +329,26 @@ func discoverSCBBackups(into *map[string]BackupPath) {
 		if e.IsDir() {
 			(*into)[filepath.Join(scbname, e.Name())] = BackupPath{
 				Path: filepath.Join(*scbdir, e.Name()),
-				SCB: true,
+				SCB:  true,
+			}
+		}
+	}
+}
+
+func discoverGhettoVCBBackups(into *map[string]BackupPath) {
+	if *ghettoVCBDir == "" {
+		return
+	}
+
+	entries, err := os.ReadDir(*ghettoVCBDir)
+	if err != nil {
+		log.Printf("ghettoVCB discovery error: %v", err)
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			(*into)[filepath.Join(ghettoVCBName, e.Name())] = BackupPath{
+				Path:      filepath.Join(*ghettoVCBDir, e.Name()),
+				GhettoVCB: true,
 			}
 		}
 	}
@@ -297,6 +357,7 @@ func discoverSCBBackups(into *map[string]BackupPath) {
 func makeBody() []byte {
 	checkPaths := maps.Clone(dirs)
 	discoverSCBBackups(&checkPaths)
+	discoverGhettoVCBBackups(&checkPaths)
 
 	ba := gatherBackupAges(checkPaths)
 	gatherOurBackupMetadata(checkPaths, &ba)
@@ -337,6 +398,7 @@ var dump *bool
 func main() {
 	flag.Var(&pathParams, "dir", "directory/ies to watch (use param more than once")
 	scbdir = flag.String("scbdir", "", "scb -into directory to watch")
+	ghettoVCBDir = flag.String("ghettovcbdir", "", "target dir for hacked ghettovcb")
 	prefix = flag.String("prefix", "backupdir_", "prefix for metric names")
 	addr = flag.String("addr", ":9407", "address to listen on")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
@@ -347,6 +409,11 @@ func main() {
 	if *scbdir != "" {
 		*scbdir = filepath.Clean(*scbdir)
 		scbname = filepath.Base(*scbdir)
+	}
+
+	if *ghettoVCBDir != "" {
+		*ghettoVCBDir = filepath.Clean(*ghettoVCBDir)
+		ghettoVCBName = filepath.Base(*ghettoVCBDir)
 	}
 
 	if *dump {
