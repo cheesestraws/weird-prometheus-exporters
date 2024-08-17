@@ -43,6 +43,7 @@ var PoolValidStatuses []string = []string{"ONLINE", "DEGRADED", "FAULTED",
 type CloudSync struct {
 	ID int `json:"id"`
 	Description string `json:"description"`
+	Enabled bool `json:"enabled"`
 	Path string `json:"path"`
 	Job struct {
 		State string `json:"state"`

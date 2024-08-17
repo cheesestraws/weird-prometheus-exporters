@@ -33,6 +33,7 @@ type Summary struct {
 	PoolPctAllocated   map[PoolIdentifier]int `prometheus_map:"pool_allocated_pct"`
 
 	CloudSyncState          map[CloudSyncIdentifier]int `prometheus_map:"cloudsync_state" prometheus_help:"0 unknown 1 FAILED 2 ABORTED 3 PENDING 4 RUNNING 5 SUCCESS"`
+	CloudSyncEnabled        map[CloudSyncIdentifier]int `prometheus_map:"cloudsync_enabled"`
 	CloudSyncAllegedPercent map[CloudSyncIdentifier]int `prometheus_map:"cloudsync_alleged_progress"`
 	CloudSyncDoneBytes      map[CloudSyncIdentifier]int `prometheus_map:"cloudsync_done_bytes"`
 }
