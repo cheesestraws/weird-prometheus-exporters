@@ -169,6 +169,11 @@ func summarise(alerts []truenas.Alert, pools []truenas.Pool, syncs []truenas.Clo
 
 		sum.CloudSyncState[id] = syncStatusMap[s.Job.State]
 		sum.CloudSyncAllegedPercent[id] = s.Job.Progress.Percent
+		if s.Enabled {
+			sum.CloudSyncEnabled[id] = 1
+		} else {
+			sum.CloudSyncEnabled[id] = 0
+		}
 
 		b, ok := stringToBytes(s.Job.Progress.Description)
 		if ok {
