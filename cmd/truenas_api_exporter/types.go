@@ -104,6 +104,7 @@ func summarise(alerts []truenas.Alert, pools []truenas.Pool, syncs []truenas.Clo
 		PoolPctAllocated:   make(map[PoolIdentifier]int),
 
 		CloudSyncState:          make(map[CloudSyncIdentifier]int),
+		CloudSyncEnabled  :      make(map[CloudSyncIdentifier]int),
 		CloudSyncAllegedPercent: make(map[CloudSyncIdentifier]int),
 		CloudSyncDoneBytes:      make(map[CloudSyncIdentifier]int),
 	}
