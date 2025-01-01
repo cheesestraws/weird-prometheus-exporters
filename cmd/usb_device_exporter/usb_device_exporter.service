@@ -1,0 +1,11 @@
+[Unit]
+Description=USB device prometheus exporter
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/usb_device_exporter
+ExecStop=/bin/kill QUIT $MAINPID
+
+[Install]
+WantedBy=multi-user.target
