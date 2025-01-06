@@ -1,0 +1,13 @@
+[Unit]
+Description=Directory entry counter prometheus exporter
+After=network.target
+
+[Service]
+Type=simple
+User=econet
+Group=econet
+ExecStart=/usr/local/bin/dir_count_exporter '/home/econet/0Tiryns/*'
+ExecStop=/bin/kill QUIT $MAINPID
+
+[Install]
+WantedBy=multi-user.target
