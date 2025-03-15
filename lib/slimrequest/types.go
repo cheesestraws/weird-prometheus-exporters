@@ -2,7 +2,7 @@ package slimrequest
 
 type ServerStatus struct {
 	IP          string `json:"ip"`
-	LastScan    string `json:"lastscan"`
+	LastScan    any    `json:"lastscan"`
 	Version     string `json:"version"`
 	MAC         string `json:"mac"`
 	HTTPPort    string `json:"httpport"`
