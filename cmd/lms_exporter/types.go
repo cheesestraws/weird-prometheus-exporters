@@ -18,6 +18,17 @@ type PlayerIdentifier struct {
 	ModelName string `prometheus_label:"player_model"`
 }
 
+type PlayerMetadata struct {
+	Name             string `prometheus_label:"player_name"`
+	ID               string `prometheus_label:"player_id"`
+	ModelName        string `prometheus_label:"player_model"`
+	Firmware         any    `prometheus_label:"firmware"`
+	Mode             string `prometheus_label:"mode"`
+	PlaylistCurIndex any    `prometheus_label:"playlist_cur_index"`
+	PlaylistTracks   int    `prometheus_label:"playlist_tracks"`
+	PlaylistMode     string `prometheus_label:"playlist_mode"`
+}
+
 type Summary struct {
 	TotalSongs    int     `prometheus:"total_songs"`
 	TotalArtists  int     `prometheus:"total_artists"`
@@ -27,6 +38,7 @@ type Summary struct {
 
 	PlayerCount int `prometheus:"player_count"`
 
+	PlayerMetadata  map[PlayerMetadata]int   `prometheus_map:"player_metadata"`
 	PlayerConnected map[PlayerIdentifier]int `prometheus_map:"player_connected"`
 	PlayerOn        map[PlayerIdentifier]int `prometheus_map:"player_on"`
 	Volume          map[PlayerIdentifier]int `prometheus_map:"player_volume"`
@@ -47,6 +59,7 @@ func (s *Status) Summarise() Summary {
 
 		PlayerCount: s.Server.PlayerCount,
 
+		PlayerMetadata:  make(map[PlayerMetadata]int),
 		PlayerConnected: make(map[PlayerIdentifier]int),
 		PlayerOn:        make(map[PlayerIdentifier]int),
 		Volume:          make(map[PlayerIdentifier]int),
@@ -72,6 +85,19 @@ func (s *Status) Summarise() Summary {
 
 		sum.Models[info.ModelName]++
 		sum.Modes[s.PlayerStatus[id].Mode]++
+
+		playerMetadata := PlayerMetadata{
+			Name:             info.Name,
+			ID:               info.PlayerID,
+			ModelName:        info.ModelName,
+			Firmware:         info.Firmware,
+			Mode:             s.PlayerStatus[id].Mode,
+			PlaylistCurIndex: s.PlayerStatus[id].PlaylistCurIndex,
+			PlaylistTracks:   s.PlayerStatus[id].PlaylistTracks,
+			PlaylistMode:     s.PlayerStatus[id].PlaylistMode,
+		}
+
+		sum.PlayerMetadata[playerMetadata] = 1
 	}
 
 	// Now deal with sync groups.  All are 0 sized to start with:

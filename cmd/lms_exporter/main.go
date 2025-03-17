@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"fmt"
-	"time"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/declprom"
 )
@@ -42,7 +42,7 @@ func serve(addr string) {
 		if *dump {
 			log.Printf("%s", bs)
 		}
-		
+
 		w.Write(bs)
 	})
 
