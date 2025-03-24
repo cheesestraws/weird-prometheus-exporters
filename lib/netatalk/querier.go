@@ -3,6 +3,7 @@ package netatalk
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -22,7 +23,7 @@ var DefaultQuerier Querier = cliQuerier{}
 func (c cliQuerier) GetZones() ([]string, error) {
 	output, err := exec.Command("getzones").Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("nbplkup: %w", err)
 	}
 	outstr := string(bytes.TrimSpace(output))
 
@@ -34,7 +35,7 @@ var spaces *regexp.Regexp = regexp.MustCompile("\\s\\s+")
 func (c cliQuerier) NBPLookup(pattern string) (map[string]string, error) {
 	output, err := exec.Command("nbplkup", pattern).Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("nbplkup: %w", err)
 	}
 	outstr := string(bytes.TrimSpace(output))
 	lines := strings.Split(outstr, "\n")
