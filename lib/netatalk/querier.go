@@ -35,6 +35,7 @@ var spaces *regexp.Regexp = regexp.MustCompile("\\s\\s+")
 func (c cliQuerier) NBPLookup(pattern string) (map[string]string, error) {
 	output, err := exec.Command("nbplkup", pattern).Output()
 	if err != nil {
+		log.Printf("nbplkup error: %s", string(bytes.TrimSpace(output)));
 		return nil, fmt.Errorf("nbplkup: %w", err)
 	}
 	outstr := string(bytes.TrimSpace(output))
