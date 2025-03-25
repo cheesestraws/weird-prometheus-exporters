@@ -34,13 +34,24 @@ func (c cliQuerier) GetZones() ([]string, error) {
 var spaces *regexp.Regexp = regexp.MustCompile("\\s\\s+")
 
 func (c cliQuerier) NBPLookup(pattern string) (map[string]string, error) {
-	output, err := exec.Command("nbplkup", pattern).Output()
-	if err != nil {
-		if e, ok := err.(*exec.ExitError); ok {
-			log.Printf("nbplkup stderr: %s", string(bytes.TrimSpace(e.Stderr)))
+	var output []byte
+	var err error
+	
+	for i := 0; i < 3; i++ {
+		output, err = exec.Command("nbplkup", pattern).Output()
+		if err != nil {
+			if e, ok := err.(*exec.ExitError); ok {
+				log.Printf("nbplkup stderr: %s", string(bytes.TrimSpace(e.Stderr)))
+			}
+		} else {
+			break
 		}
-		return nil, fmt.Errorf("nbplkup: %w", err)
 	}
+	
+	if err != nil {
+			return nil, fmt.Errorf("nbplkup: %w", err)
+	}
+	
 	outstr := string(bytes.TrimSpace(output))
 	lines := strings.Split(outstr, "\n")
 
