@@ -15,6 +15,8 @@ Don't use them for anything important.
 
 * `backupdir_watcher`: given a directory of files with dates embedded in their names, is there a recent one?
 
+* `dir_count_watcher`: how many files are in a directory?
+
 * `env_agency_flood_exporter`: make available the height of rivers using environment agency open data
 
 * `findmy_battery_exporer`: this one is some next level bullshit, runs on a macOS virtual machine and makes available battery levels of iCloud connected devices.
@@ -23,6 +25,14 @@ Don't use them for anything important.
 
 * `realtime_trains_exporter`: exports stats about trains through a station.  You need a realtimetrains API account.
 
+* `sas2ircu_exporter`: SAS-2 integrated RAID utility output
+
+* `tinydns_exporter`: more than you wanted to know about tinydns
+
 * `truenas_api_exporter`: a couple of things that are missing from the collectd stats: whether there are any active alerts, and how cloud sync jobs are doing.
 
+* `usb_device_exporter`: lsusb, but for prometheus
+
 * `wiltshire_bins_exporter`: do you live in wiltshire and want to know whether you should put your bins out tonight?
+
+* `zigbee2mqtt_metadata_exporter`: what Zigbee devices are configured and how they are connected to one another.
