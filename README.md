@@ -35,4 +35,6 @@ Don't use them for anything important.
 
 * `wiltshire_bins_exporter`: do you live in wiltshire and want to know whether you should put your bins out tonight?
 
+* `xset_monitor_status_exporter`: has your monitor turned off courtesy of DPMS?
+
 * `zigbee2mqtt_metadata_exporter`: what Zigbee devices are configured and how they are connected to one another.

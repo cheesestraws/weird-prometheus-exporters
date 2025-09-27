@@ -1,0 +1,13 @@
+[Unit]
+Description=Export if monitor is on
+After=network.target
+
+[Service]
+Type=simple
+User=cheesey
+Group=cheesey
+ExecStart=/usr/local/bin/xset_monitor_status_exporter
+ExecStop=/bin/kill QUIT $MAINPID
+
+[Install]
+WantedBy=multi-user.target
