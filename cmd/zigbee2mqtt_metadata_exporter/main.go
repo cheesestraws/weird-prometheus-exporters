@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	
+
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/declprom"
 )
 
@@ -19,7 +19,7 @@ var marshaller declprom.Marshaller
 func serve(addr string) {
 	http.HandleFunc(*endpoint, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
-		
+
 		promstate.Lock()
 		defer promstate.Unlock()
 		w.Write(marshaller.Marshal(promstate, map[string]string{
@@ -37,7 +37,6 @@ func serve(addr string) {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-
 func main() {
 	broker := flag.String("broker", "", "mqtt broker to connect to")
 	user := flag.String("user", "", "username")
@@ -53,9 +52,9 @@ func main() {
 		flag.Usage()
 		return
 	}
-	
+
 	go run_mqtt(*broker, *user, *pass, *basetopic, *mapNHrs)
-	
+
 	marshaller = declprom.Marshaller{
 		MetricNamePrefix: *prefix,
 	}

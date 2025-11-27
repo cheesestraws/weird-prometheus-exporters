@@ -16,25 +16,25 @@ type Device struct {
 }
 
 type Link struct {
-	Relationship string `prometheus_label:"relationship"`
-	SourceSensor string `prometheus_label:"source_sensor"`
+	Relationship   string `prometheus_label:"relationship"`
+	SourceSensor   string `prometheus_label:"source_sensor"`
 	SourceIEEEAddr string `prometheus_label:"source_ieee_address"`
-	SourceType string `prometheus_label:"source_type"`
-	TargetSensor string `prometheus_label:"target_sensor"`
+	SourceType     string `prometheus_label:"source_type"`
+	TargetSensor   string `prometheus_label:"target_sensor"`
 	TargetIEEEAddr string `prometheus_label:"target_ieee_address"`
-	TargetType string `prometheus_label:"target_type"`
+	TargetType     string `prometheus_label:"target_type"`
 }
 
 type State struct {
 	sync.Mutex
-	
-	DevicesTimestamp int64 `prometheus:"device_info_timestamp"`
-	Devices map[Device]int `prometheus_map:"device_info"`
-	
-	LinksTimestamp int64 `prometheus:"link_info_timestamp"`
-	Links map[Link]int `prometheus_map:"link_info"`
-	
-	ExporterPublishErrors int `prometheus:"exporter_publish_errors"`
+
+	DevicesTimestamp int64          `prometheus:"device_info_timestamp"`
+	Devices          map[Device]int `prometheus_map:"device_info"`
+
+	LinksTimestamp int64        `prometheus:"link_info_timestamp"`
+	Links          map[Link]int `prometheus_map:"link_info"`
+
+	ExporterPublishErrors  int `prometheus:"exporter_publish_errors"`
 	ExporterPublishSuccess int `prometheus:"exporter_publish_success"`
 }
 

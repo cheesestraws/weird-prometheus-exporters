@@ -13,7 +13,7 @@ import (
 )
 
 func relationshipString(relationship int) string {
-	switch(relationship) {
+	switch relationship {
 	case 0x0:
 		return "parent"
 	case 0x1:
@@ -31,17 +31,17 @@ func relationshipString(relationship int) string {
 
 func handleMapMessage(client mqtt.Client, message mqtt.Message) {
 	type jsonNode struct {
-		FriendlyName   string `json:"friendlyName"`
-		IEEEAddress    string `json:"ieeeAddr"`
-		Type string `json:"type"`
+		FriendlyName string `json:"friendlyName"`
+		IEEEAddress  string `json:"ieeeAddr"`
+		Type         string `json:"type"`
 	}
-	
+
 	type jsonLink struct {
-		Relationship int `json:"relationship"`
+		Relationship   int    `json:"relationship"`
 		SourceIEEEAddr string `json:"sourceIeeeAddr"`
 		TargetIEEEAddr string `json:"targetIeeeAddr"`
 	}
-	
+
 	type jsonResponse struct {
 		Data struct {
 			Value struct {
@@ -50,37 +50,37 @@ func handleMapMessage(client mqtt.Client, message mqtt.Message) {
 			} `json:"value"`
 		} `json:"data"`
 	}
-	
+
 	var resp jsonResponse
 	err := json.Unmarshal(message.Payload(), &resp)
 	if err != nil {
 		log.Printf("err: %v", err)
 		return
 	}
-	
+
 	nodeMap := make(map[string]jsonNode)
 	for _, n := range resp.Data.Value.Nodes {
 		nodeMap[n.IEEEAddress] = n
 	}
-	
+
 	promLinks := make(map[Link]int)
 	for _, l := range resp.Data.Value.Links {
 		promLinks[Link{
-			Relationship: relationshipString(l.Relationship),
-			SourceSensor: nodeMap[l.SourceIEEEAddr].FriendlyName,
+			Relationship:   relationshipString(l.Relationship),
+			SourceSensor:   nodeMap[l.SourceIEEEAddr].FriendlyName,
 			SourceIEEEAddr: l.SourceIEEEAddr,
-			SourceType:nodeMap[l.SourceIEEEAddr].Type,
-			TargetSensor: nodeMap[l.TargetIEEEAddr].FriendlyName,
+			SourceType:     nodeMap[l.SourceIEEEAddr].Type,
+			TargetSensor:   nodeMap[l.TargetIEEEAddr].FriendlyName,
 			TargetIEEEAddr: l.TargetIEEEAddr,
-			TargetType: nodeMap[l.TargetIEEEAddr].Type,
+			TargetType:     nodeMap[l.TargetIEEEAddr].Type,
 		}] = 1
 	}
-	
+
 	promstate.Lock()
 	defer promstate.Unlock()
 	promstate.Links = promLinks
 	promstate.LinksTimestamp = time.Now().UnixMilli()
-	
+
 	log.Printf("got %d links", len(promLinks))
 }
 
@@ -120,7 +120,7 @@ func handleDevicesMessage(client mqtt.Client, message mqtt.Message) {
 			Vendor:         d.Definition.Vendor,
 		}] = 1
 	}
-	
+
 	promstate.Lock()
 	defer promstate.Unlock()
 	promstate.Devices = promDevices
@@ -143,11 +143,11 @@ func mapRequestLoop(client mqtt.Client, base string, everyN int) {
 			promstate.ExporterPublishSuccess++
 			promstate.Unlock()
 		}
-		
-		if (everyN > 0) {
+
+		if everyN > 0 {
 			time.Sleep(time.Duration(everyN) * time.Hour)
 		} else {
-			select{}
+			select {}
 		}
 	}
 }
@@ -167,10 +167,18 @@ func run_mqtt(broker string, user string, pass string, base string, everyN int) 
 	opts.AddBroker(broker)
 
 	cli := mqtt.NewClient(opts)
-	if token := cli.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	} else {
-		log.Printf("Connected to %s\n", broker)
+
+	for {
+		token := cli.Connect()
+		token.Wait()
+		err := token.Error()
+		if err != nil {
+			log.Printf("Error connecting to %s: %v\n", broker, err)
+			time.Sleep(5 * time.Second)
+		} else {
+			log.Printf("Connected to %s\n", broker)
+			break
+		}
 	}
 
 	// Subscribe to topics
@@ -178,7 +186,7 @@ func run_mqtt(broker string, user string, pass string, base string, everyN int) 
 	if token := cli.Subscribe(devicesTopic, 0, handleDevicesMessage); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
-	
+
 	mapTopic := path.Join(base, "bridge/response/networkmap")
 	if token := cli.Subscribe(mapTopic, 0, handleMapMessage); token.Wait() && token.Error() != nil {
 		panic(token.Error())
