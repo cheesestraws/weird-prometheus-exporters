@@ -25,6 +25,8 @@ Don't use them for anything important.
 
 * `realtime_trains_exporter`: exports stats about trains through a station.  You need a realtimetrains API account.
 
+* `rtl433_exporter`: another thingy to get stats out of rtl_443
+
 * `sas2ircu_exporter`: SAS-2 integrated RAID utility output
 
 * `tinydns_exporter`: more than you wanted to know about tinydns
