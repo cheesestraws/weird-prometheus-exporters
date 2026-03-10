@@ -54,7 +54,7 @@ func fetchMetadata(baseURL string) {
 			}
 		}
 		metrics.Unlock()
-				
+
 		if *dump {
 			fmt.Printf("%s\n\n\n", getBody())
 		}

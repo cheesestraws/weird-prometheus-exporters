@@ -1,9 +1,38 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
+	"strings"
 	"sync"
+	"time"
 )
+
+type JSONNumberOrString struct {
+	IsNumber bool
+    Number float64
+    String string
+}
+
+func (j *JSONNumberOrString) UnmarshalJSON(b []byte) error {
+	// try number first
+	err := json.Unmarshal(b, &j.Number)
+	if err == nil {
+		j.IsNumber = true
+		return nil
+	}
+	
+	err = json.Unmarshal(b, &j.String)
+	if err != nil {
+		return err
+	}
+	
+	j.IsNumber = false
+	return nil
+}
 
 type RPCDeviceInfo struct {
 	Vendor  string
@@ -49,6 +78,63 @@ func metadataRPCToProm(devs RPCDeviceInfo, meta RPCMeta) PromMetadata {
 	}
 }
 
+type LabelSet string
+type DynamicSensorMetrics struct {
+	LastSeen time.Time
+	Metrics map[string]float64
+}
+
+type AllDynamicSensorMetrics struct {
+	Metrics map[LabelSet]DynamicSensorMetrics
+}
+
+func (a *AllDynamicSensorMetrics) Observe(labels map[string]string, metrics map[string]float64) {
+	if a.Metrics == nil {	
+		// lazily initialise map if we need to
+		a.Metrics = make(map[LabelSet]DynamicSensorMetrics)
+	}
+	
+	var ll []string
+	for k, v := range labels {
+		ll = append(ll, fmt.Sprintf("%s=%q", k, v))
+	}
+	slices.Sort(ll)
+	
+	ls := strings.Join(ll, ",")
+	
+	dsm := DynamicSensorMetrics{
+		LastSeen: time.Now(),
+		Metrics: maps.Clone(metrics),
+	}
+	
+	a.Metrics[LabelSet(ls)] = dsm
+}
+
+func (a *AllDynamicSensorMetrics) PromBytes(prefix string, baseURL string) []byte {
+	var accum bytes.Buffer
+	
+	for labels, dsm := range a.Metrics {
+		fmt.Fprintf(&accum, prefix + "timestamp{base_url=\"%s\",%s} %d\n", baseURL, labels, dsm.LastSeen.Unix())
+		for k, v := range dsm.Metrics {
+			fmt.Fprintf(&accum, prefix + "%s{base_url=\"%s\",%s} %v\n", k, baseURL, labels, v)
+		}
+	}
+	
+	return accum.Bytes()
+}
+
+func (a *AllDynamicSensorMetrics) FlushOldCrap(timeout time.Duration) {
+	if a.Metrics == nil {
+		return
+	}
+	
+	for labels, dsm := range a.Metrics {
+		if time.Since(dsm.LastSeen) > timeout {
+			delete(a.Metrics, labels)
+		}
+	}
+}
+
 type Metrics struct {
 	sync.Mutex
 
@@ -56,4 +142,9 @@ type Metrics struct {
 	MetadataValid         int                  `prometheus:"metadata_valid"`
 	MetadataPollSuccesses int                  `prometheus:"metadata_poll_success_count"`
 	MetadataPollFailures  int                  `prometheus:"metadata_poll_failure_count"`
+	
+	StreamConnectionUp int `prometheus:"stream_connection_up"`
+	
+	DynamicMetrics AllDynamicSensorMetrics
+	LastDynamicMetricFlush int64 `prometheus:"last_dynamic_metric_flush"`
 }
