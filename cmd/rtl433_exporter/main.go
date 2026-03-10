@@ -72,10 +72,9 @@ func main() {
 	addr = flag.String("addr", ":9414", "address to listen on")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
 	flag.Parse()
-
-	_ = prefix
-	_ = addr
-
+	
+	log.SetOutput(logWriter{})
+	
 	go fetchMetadata(*baseURL)
 	go streamEvents(*baseURL)
 	go flushOldCrap()

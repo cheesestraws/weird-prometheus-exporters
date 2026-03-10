@@ -67,6 +67,18 @@ func handleConn(c io.ReadCloser) error {
 }
 
 func handleLine(mm map[string]JSONNumberOrString) error {
+	// Check that our attributes only contain numbers and strings
+	for _, val := range mm {
+		// Occasionally rtl_433 sends us an unsolicited stats
+		// message which contains an array.  It's not clear what
+		// we should do with arrays and other crap so
+		// let's just filter them out and hope for the best
+		if val.IsOther {
+			log.Printf("got unexpected field type; errant stats request?")
+			return nil
+		}
+	}
+
 	fields := maps.Clone(mm)
 
 	delete(fields, "time")
@@ -78,7 +90,7 @@ func handleLine(mm map[string]JSONNumberOrString) error {
 	for k, v := range fields {
 		if v.IsNumber {
 			metricSet[k] = v.Number
-		} else {
+		} else if v.IsString {
 			labelSet[k] = v.String
 		}
 	}

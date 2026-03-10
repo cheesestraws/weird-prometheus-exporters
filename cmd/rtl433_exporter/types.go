@@ -14,23 +14,30 @@ import (
 type JSONNumberOrString struct {
 	IsNumber bool
     Number float64
+    IsString bool
     String string
+    
+    IsOther bool
 }
 
 func (j *JSONNumberOrString) UnmarshalJSON(b []byte) error {
 	// try number first
 	err := json.Unmarshal(b, &j.Number)
 	if err == nil {
+		j.IsString = false
 		j.IsNumber = true
 		return nil
 	}
 	
 	err = json.Unmarshal(b, &j.String)
-	if err != nil {
-		return err
+	if err == nil {
+		j.IsString = true
+		j.IsNumber = false
+		return nil
 	}
 	
-	j.IsNumber = false
+	j.IsOther = true
+	
 	return nil
 }
 
