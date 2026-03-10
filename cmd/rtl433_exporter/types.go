@@ -93,12 +93,17 @@ type DynamicSensorMetrics struct {
 
 type AllDynamicSensorMetrics struct {
 	Metrics map[LabelSet]DynamicSensorMetrics
+	Observations map[LabelSet]uint64
 }
 
 func (a *AllDynamicSensorMetrics) Observe(labels map[string]string, metrics map[string]float64) {
 	if a.Metrics == nil {	
 		// lazily initialise map if we need to
 		a.Metrics = make(map[LabelSet]DynamicSensorMetrics)
+	}
+	
+	if a.Observations == nil {
+		a.Observations = make(map[LabelSet]uint64)
 	}
 	
 	var ll []string
@@ -115,6 +120,7 @@ func (a *AllDynamicSensorMetrics) Observe(labels map[string]string, metrics map[
 	}
 	
 	a.Metrics[LabelSet(ls)] = dsm
+	a.Observations[LabelSet(ls)]++
 }
 
 func (a *AllDynamicSensorMetrics) PromBytes(prefix string, baseURL string) []byte {
@@ -124,6 +130,11 @@ func (a *AllDynamicSensorMetrics) PromBytes(prefix string, baseURL string) []byt
 		fmt.Fprintf(&accum, prefix + "timestamp{base_url=\"%s\",%s} %d\n", baseURL, labels, dsm.LastSeen.Unix())
 		for k, v := range dsm.Metrics {
 			fmt.Fprintf(&accum, prefix + "%s{base_url=\"%s\",%s} %v\n", k, baseURL, labels, v)
+		}
+		
+		count, ok := a.Observations[labels]
+		if ok {
+			fmt.Fprintf(&accum, prefix + "event_count{base_url=\"%s\",%s} %d\n", baseURL, labels, count)
 		}
 	}
 	

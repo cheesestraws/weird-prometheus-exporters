@@ -68,7 +68,7 @@ func serve(addr string) {
 
 func main() {
 	baseURL = flag.String("baseurl", "http://rtl433.srv.lan:8433/", "base URL of rtl_433 instance")
-	prefix = flag.String("prefix", "rtl433_", "prefix for metric names")
+	prefix = flag.String("prefix", "rtl_433_", "prefix for metric names")
 	addr = flag.String("addr", ":9414", "address to listen on")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
 	flag.Parse()
