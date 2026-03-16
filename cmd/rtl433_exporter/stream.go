@@ -78,6 +78,16 @@ func handleLine(mm map[string]JSONNumberOrString) error {
 			return nil
 		}
 	}
+	
+	// messages from entities have a model and time; anything else,
+	// ignore
+	_, hasTime := mm["time"]
+	_, hasModel := mm["model"]
+	
+	if !hasTime || !hasModel {
+		log.Printf("unexpecyed: %+v", mm)
+		return nil
+	}
 
 	fields := maps.Clone(mm)
 
