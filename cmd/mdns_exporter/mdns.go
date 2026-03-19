@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cheesestraws/mdns"
@@ -61,10 +62,20 @@ func (m *mdnsServiceTracker) removeStaleJunk(timeout time.Duration) []string {
 }
 
 type mdnsWatcherStats struct {
+	runningServicePollers atomic.Int64
+	servicePollCount atomic.Int64
+	serviceReplyCount atomic.Int64
+	serviceCleanupCount atomic.Int64
+	
+	runningResourcePollers atomic.Int64
+	resourcePollCount atomic.Int64
+	resourceReplyCount atomic.Int64
+	resourceCleanupCount atomic.Int64
 }
 
 type mdnsWatcher struct {
 	servicesCh chan *mdns.ServiceEntry
+	stats mdnsWatcherStats
 
 	sync.Mutex
 	services mdnsServiceTracker
@@ -82,6 +93,8 @@ func newmdnsWatcher() *mdnsWatcher {
 }
 
 func (m *mdnsWatcher) handleOneIncomingServiceReply(name string) {
+	m.stats.serviceReplyCount.Add(1)
+
 	m.Lock()
 	defer m.Unlock()
 
@@ -117,6 +130,9 @@ func (m *mdnsWatcher) sendServiceRequests() {
 }
 
 func (m *mdnsWatcher) sendOneServiceRequest() {
+	m.stats.runningServicePollers.Add(1)
+	m.stats.servicePollCount.Add(1)
+	defer m.stats.runningServicePollers.Add(-1)
 	mdns.Query(&mdns.QueryParam{
 		Service: "_services._dns-sd._udp",
 		Timeout: 60 * time.Second,
@@ -126,6 +142,8 @@ func (m *mdnsWatcher) sendOneServiceRequest() {
 }
 
 func (m *mdnsWatcher) removeStaleJunkOnce() {
+	m.stats.serviceCleanupCount.Add(1)
+
 	m.Lock()
 	defer m.Unlock()
 
@@ -139,7 +157,7 @@ func (m *mdnsWatcher) removeStaleJunkOnce() {
 }
 
 func (m *mdnsWatcher) removeStaleJunkRepeatedly() {
-	t := time.NewTicker(1 * time.Minute)
+	t := time.NewTicker(10 * time.Minute)
 	for _ = range t.C {
 		m.removeStaleJunkOnce()
 	}
@@ -160,7 +178,7 @@ func (m *mdnsWatcher) spawnService(name string, domain string) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelFuncs[name] = cancel
-	entity := newMDNSService(name, domain)
+	entity := newMDNSService(name, domain, &m.stats)
 	m.entities[name] = entity
 
 	go entity.perServiceRunloop(ctx)
@@ -222,6 +240,7 @@ func mkServiceDetails(entry *mdns.ServiceEntry) serviceDetails {
 
 type mdnsService struct {
 	c chan *mdns.ServiceEntry
+	stats *mdnsWatcherStats
 
 	sync.RWMutex
 
@@ -230,9 +249,10 @@ type mdnsService struct {
 	m      map[serviceDetails]time.Time
 }
 
-func newMDNSService(name string, domain string) *mdnsService {
+func newMDNSService(name string, domain string, stats *mdnsWatcherStats) *mdnsService {
 	return &mdnsService{
 		c:      make(chan *mdns.ServiceEntry, 1024),
+		stats:  stats,
 		name:   name,
 		domain: domain,
 		m:      make(map[serviceDetails]time.Time),
@@ -240,6 +260,8 @@ func newMDNSService(name string, domain string) *mdnsService {
 }
 
 func (m *mdnsService) removeStaleJunkOnce() {
+	m.stats.resourceCleanupCount.Add(1)
+
 	m.Lock()
 	defer m.Unlock()
 
@@ -264,6 +286,9 @@ func (m *mdnsService) removeStaleJunk(ctx context.Context) {
 }
 
 func (m *mdnsService) sendOneRequest(ctx context.Context) {
+	m.stats.resourcePollCount.Add(1)
+	m.stats.runningResourcePollers.Add(1)
+	defer m.stats.runningResourcePollers.Add(-1)
 	mdns.QueryContext(ctx, &mdns.QueryParam{
 		Service: m.name,
 		Domain:  m.domain,
@@ -282,12 +307,14 @@ func (m *mdnsService) sendRequests(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			m.sendOneRequest(ctx)
+			go m.sendOneRequest(ctx)
 		}
 	}
 }
 
 func (m *mdnsService) handleOneReply(e *mdns.ServiceEntry) {
+	m.stats.resourceReplyCount.Add(1)
+
 	m.Lock()
 	defer m.Unlock()
 
@@ -360,6 +387,18 @@ func (m *mdnsService) fillMetrics(metrics *Metrics) {
 	}
 }
 
+func (m *mdnsWatcherStats) fillMetrics(metrics *Metrics) {
+	metrics.RunningServicePollers = m.runningServicePollers.Load()
+	metrics.ServicePollCount = m.servicePollCount.Load()
+	metrics.ServiceReplyCount = m.serviceReplyCount.Load()
+	metrics.ServiceCleanupCount = m.serviceCleanupCount.Load()
+	
+	metrics.RunningResourcePollers = m.runningResourcePollers.Load()
+	metrics.ResourcePollCount = m.resourcePollCount.Load()
+	metrics.ResourceReplyCount = m.resourceReplyCount.Load()
+	metrics.ResourceCleanupCount = m.resourceCleanupCount.Load()
+}
+
 func (m *mdnsWatcher) metrics() Metrics {
 	m.Lock()
 	defer m.Unlock()
@@ -370,6 +409,8 @@ func (m *mdnsWatcher) metrics() Metrics {
 	for _, e := range m.entities {
 		e.fillMetrics(&metrics)
 	}
+	
+	m.stats.fillMetrics(&metrics)
 
 	return metrics
 }

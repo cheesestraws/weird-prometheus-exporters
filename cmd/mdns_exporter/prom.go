@@ -17,6 +17,16 @@ type Resource struct {
 
 
 type Metrics struct {
+	RunningServicePollers int64 `prometheus:"running_service_pollers"`
+	ServicePollCount int64  `prometheus:"service_poll_count"`
+	ServiceReplyCount int64 `prometheus:"service_reply_count"`
+	ServiceCleanupCount int64 `prometheus:"service_cleanup_count"`
+	
+	RunningResourcePollers int64 `prometheus:"running_resource_pollers"`
+	ResourcePollCount int64 `prometheus:"resource_poll_count"`
+	ResourceReplyCount int64 `prometheus:"resource_reply_count"`
+	ResourceCleanupCount int64 `prometheus:"resource_cleanup_count"`
+
 	ServiceLastSeen  map[Service]int64        `prometheus_map:"service_last_seen"`
-	ResourceLastSeen map[Resource]int64 `prometheus_map:"resource_last_seen"`
+	ResourceLastSeen map[Resource]int64 `prometheus_map:"resource_last_seen"`	
 }
