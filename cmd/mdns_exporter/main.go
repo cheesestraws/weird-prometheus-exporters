@@ -9,7 +9,7 @@ import (
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/declprom"
 )
 
-var metrics Metrics
+var watcher *mdnsWatcher
 
 var prefix *string
 var addr *string
@@ -20,8 +20,8 @@ func getBody() []byte {
 		MetricNamePrefix: *prefix,
 	}
 
-	bs := m.Marshal(metrics, nil)
-		
+	bs := m.Marshal(watcher.metrics(), nil)
+
 	return bs
 }
 
@@ -51,8 +51,9 @@ func main() {
 	prefix = flag.String("prefix", "mdns_", "prefix for metric names")
 	addr = flag.String("addr", ":9415", "address to listen on")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
-	
 
-	m := newmdnsWatcher()
-	m.watchServices()
+	watcher = newmdnsWatcher()
+	go watcher.watchServices()
+
+	serve(*addr)
 }

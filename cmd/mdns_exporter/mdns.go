@@ -131,7 +131,7 @@ func (m *mdnsWatcher) removeStaleJunkOnce() {
 	removed := m.services.removeStaleJunk(45 * time.Minute)
 	for _, svc := range removed {
 		fmt.Printf(" - %s\n", svc)
-		
+
 		parts := strings.Split(svc, ".")
 		m.killService(parts[0]+"."+parts[1]+".", parts[2])
 	}
@@ -168,35 +168,55 @@ func (m *mdnsWatcher) spawnService(name string, domain string) {
 func (m *mdnsWatcher) killService(name string, domain string) {
 	// only call this if you already have a lock pls
 	fmt.Printf("- killing %s\n", name)
-	
+
 	cancel, ok := m.cancelFuncs[name]
 	if !ok {
 		return
-	} 
-	
+	}
+
 	cancel()
 	delete(m.cancelFuncs, name)
 	delete(m.entities, name)
 }
 
 type serviceDetails struct {
-	Name string
-	Host string
+	Name   string
+	Host   string
 	AddrV4 string
 	AddrV6 string
-	Port int
-	Info string
+	Port   int
+	Info   string
+}
+
+func (s *serviceDetails) resource(serviceName string) Resource {
+	return Resource{
+		Service: serviceName,
+		Name: s.Name,
+		Host: s.Host,
+		AddrV4: s.AddrV4,
+		AddrV6: s.AddrV6,
+		Port: s.Port,
+		Info: s.Info,
+	}
 }
 
 func mkServiceDetails(entry *mdns.ServiceEntry) serviceDetails {
-	return serviceDetails{
-		Name: entry.Name,
-		Host: entry.Host,
-		AddrV4: entry.AddrV4.String(),
-		AddrV6: entry.AddrV6.String(),
-		Port: entry.Port,
-		Info: entry.Info,
+	deets := serviceDetails{
+		Name:   entry.Name,
+		Host:   entry.Host,
+		Port:   entry.Port,
+		Info:   entry.Info,
 	}
+	
+	if entry.AddrV4 != nil {
+		deets.AddrV4 = entry.AddrV4.String()
+	}
+	
+	if entry.AddrV6 != nil {
+		deets.AddrV6 = entry.AddrV6.String()
+	}
+	
+	return deets
 }
 
 type mdnsService struct {
@@ -221,9 +241,9 @@ func newMDNSService(name string, domain string) *mdnsService {
 func (m *mdnsService) removeStaleJunkOnce() {
 	m.Lock()
 	defer m.Unlock()
-	
+
 	for k, v := range m.m {
-		if time.Since(v) > 25 * time.Minute {
+		if time.Since(v) > 25*time.Minute {
 			fmt.Printf("-- %s\n", k.Name)
 			delete(m.m, k)
 		}
@@ -269,20 +289,20 @@ func (m *mdnsService) sendRequests(ctx context.Context) {
 func (m *mdnsService) handleOneReply(e *mdns.ServiceEntry) {
 	m.Lock()
 	defer m.Unlock()
-	
+
 	// filter on suffix
 	suffix := m.name + m.domain + "."
 	if !strings.HasSuffix(e.Name, suffix) {
 		return
 	}
-	
+
 	ds := mkServiceDetails(e)
 
 	_, exists := m.m[ds]
 	if !exists {
 		fmt.Printf("++ (%s) %s @ %v\n", m.name, e.Name, e.TTL)
 	}
-	
+
 	m.m[ds] = time.Now()
 }
 
@@ -301,4 +321,54 @@ func (m *mdnsService) perServiceRunloop(ctx context.Context) {
 	go m.removeStaleJunk(ctx)
 	go m.handleReplies(ctx)
 	m.sendRequests(ctx)
+}
+
+// Metrics generation
+
+func (m *mdnsServiceTracker) fillMetrics(metrics *Metrics) {
+	metrics.ServiceLastSeen = make(map[Service]int64)
+
+	m.RLock()
+	defer m.RUnlock()
+
+	for k, v := range m.m {
+		parts := strings.Split(k, ".")
+		if len(parts) < 3 {
+			continue
+		}
+
+		svc := Service{
+			Name: k,
+			Desc: serviceDescriptions[parts[0]],
+		}
+		metrics.ServiceLastSeen[svc] = v.Unix()
+	}
+}
+
+func (m *mdnsService) fillMetrics(metrics *Metrics) {
+	m.RLock()
+	defer m.RUnlock()
+
+	if metrics.ResourceLastSeen == nil {
+		metrics.ResourceLastSeen = make(map[Resource]int64)
+	}
+	
+	for k, v := range m.m {
+		res := k.resource(m.name + m.domain + ".")
+		metrics.ResourceLastSeen[res] = v.Unix()
+	}
+}
+
+func (m *mdnsWatcher) metrics() Metrics {
+	m.Lock()
+	defer m.Unlock()
+
+	metrics := Metrics{}
+	m.services.fillMetrics(&metrics)
+	
+	for _, e := range m.entities {
+		e.fillMetrics(&metrics)
+	}
+
+	return metrics
 }
