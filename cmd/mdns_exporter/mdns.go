@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log"
 	"strings"
@@ -10,6 +9,8 @@ import (
 	"time"
 
 	"github.com/cheesestraws/mdns"
+	
+	"github.com/cheesestraws/weird-prometheus-exporters/lib/logutil"
 )
 
 type mdnsServiceTracker struct {
@@ -93,7 +94,7 @@ func (m *mdnsWatcher) handleOneIncomingServiceReply(name string) {
 
 	replaced := m.services.observe(name)
 	if !replaced {
-		fmt.Printf("+ %+s [%s]\n", name, serviceDescriptions[parts[0]])
+		logutil.Verbosef("+ %+s [%s]\n", name, serviceDescriptions[parts[0]])
 	}
 
 	if !replaced {
@@ -130,7 +131,7 @@ func (m *mdnsWatcher) removeStaleJunkOnce() {
 
 	removed := m.services.removeStaleJunk(45 * time.Minute)
 	for _, svc := range removed {
-		fmt.Printf(" - %s\n", svc)
+		logutil.Verbosef(" - %s\n", svc)
 
 		parts := strings.Split(svc, ".")
 		m.killService(parts[0]+"."+parts[1]+".", parts[2])
@@ -155,7 +156,7 @@ func (m *mdnsWatcher) watchServices() {
 
 func (m *mdnsWatcher) spawnService(name string, domain string) {
 	// only call this if you already have a lock pls
-	fmt.Printf("+ spawning %s\n", name)
+	logutil.Verbosef("+ spawning %s\n", name)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelFuncs[name] = cancel
@@ -167,7 +168,7 @@ func (m *mdnsWatcher) spawnService(name string, domain string) {
 
 func (m *mdnsWatcher) killService(name string, domain string) {
 	// only call this if you already have a lock pls
-	fmt.Printf("- killing %s\n", name)
+	logutil.Verbosef("- killing %s\n", name)
 
 	cancel, ok := m.cancelFuncs[name]
 	if !ok {
@@ -244,7 +245,7 @@ func (m *mdnsService) removeStaleJunkOnce() {
 
 	for k, v := range m.m {
 		if time.Since(v) > 25*time.Minute {
-			fmt.Printf("-- %s\n", k.Name)
+			logutil.Verbosef("-- %s\n", k.Name)
 			delete(m.m, k)
 		}
 	}
@@ -300,7 +301,7 @@ func (m *mdnsService) handleOneReply(e *mdns.ServiceEntry) {
 
 	_, exists := m.m[ds]
 	if !exists {
-		fmt.Printf("++ (%s) %s @ %v\n", m.name, e.Name, e.TTL)
+		logutil.Verbosef("++ (%s) %s @ %v\n", m.name, e.Name, e.TTL)
 	}
 
 	m.m[ds] = time.Now()

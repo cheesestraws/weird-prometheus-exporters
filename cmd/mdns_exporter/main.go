@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/declprom"
+	_ "github.com/cheesestraws/weird-prometheus-exporters/lib/logutil"
 )
 
 var watcher *mdnsWatcher
@@ -51,6 +52,7 @@ func main() {
 	prefix = flag.String("prefix", "mdns_", "prefix for metric names")
 	addr = flag.String("addr", ":9415", "address to listen on")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
+	flag.Parse()
 
 	watcher = newmdnsWatcher()
 	go watcher.watchServices()
