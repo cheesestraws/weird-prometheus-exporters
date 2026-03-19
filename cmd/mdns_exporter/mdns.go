@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/cheesestraws/mdns"
-	
+
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/logutil"
 )
 
@@ -63,19 +63,19 @@ func (m *mdnsServiceTracker) removeStaleJunk(timeout time.Duration) []string {
 
 type mdnsWatcherStats struct {
 	runningServicePollers atomic.Int64
-	servicePollCount atomic.Int64
-	serviceReplyCount atomic.Int64
-	serviceCleanupCount atomic.Int64
-	
+	servicePollCount      atomic.Int64
+	serviceReplyCount     atomic.Int64
+	serviceCleanupCount   atomic.Int64
+
 	runningResourcePollers atomic.Int64
-	resourcePollCount atomic.Int64
-	resourceReplyCount atomic.Int64
-	resourceCleanupCount atomic.Int64
+	resourcePollCount      atomic.Int64
+	resourceReplyCount     atomic.Int64
+	resourceCleanupCount   atomic.Int64
 }
 
 type mdnsWatcher struct {
 	servicesCh chan *mdns.ServiceEntry
-	stats mdnsWatcherStats
+	stats      mdnsWatcherStats
 
 	sync.Mutex
 	services mdnsServiceTracker
@@ -210,36 +210,36 @@ type serviceDetails struct {
 func (s *serviceDetails) resource(serviceName string) Resource {
 	return Resource{
 		Service: serviceName,
-		Name: s.Name,
-		Host: s.Host,
-		AddrV4: s.AddrV4,
-		AddrV6: s.AddrV6,
-		Port: s.Port,
-		Info: s.Info,
+		Name:    s.Name,
+		Host:    s.Host,
+		AddrV4:  s.AddrV4,
+		AddrV6:  s.AddrV6,
+		Port:    s.Port,
+		Info:    s.Info,
 	}
 }
 
 func mkServiceDetails(entry *mdns.ServiceEntry) serviceDetails {
 	deets := serviceDetails{
-		Name:   entry.Name,
-		Host:   entry.Host,
-		Port:   entry.Port,
-		Info:   entry.Info,
+		Name: entry.Name,
+		Host: entry.Host,
+		Port: entry.Port,
+		Info: entry.Info,
 	}
-	
+
 	if entry.AddrV4 != nil {
 		deets.AddrV4 = entry.AddrV4.String()
 	}
-	
+
 	if entry.AddrV6 != nil {
 		deets.AddrV6 = entry.AddrV6.String()
 	}
-	
+
 	return deets
 }
 
 type mdnsService struct {
-	c chan *mdns.ServiceEntry
+	c     chan *mdns.ServiceEntry
 	stats *mdnsWatcherStats
 
 	sync.RWMutex
@@ -380,7 +380,7 @@ func (m *mdnsService) fillMetrics(metrics *Metrics) {
 	if metrics.ResourceLastSeen == nil {
 		metrics.ResourceLastSeen = make(map[Resource]int64)
 	}
-	
+
 	for k, v := range m.m {
 		res := k.resource(m.name + m.domain + ".")
 		metrics.ResourceLastSeen[res] = v.Unix()
@@ -392,7 +392,7 @@ func (m *mdnsWatcherStats) fillMetrics(metrics *Metrics) {
 	metrics.ServicePollCount = m.servicePollCount.Load()
 	metrics.ServiceReplyCount = m.serviceReplyCount.Load()
 	metrics.ServiceCleanupCount = m.serviceCleanupCount.Load()
-	
+
 	metrics.RunningResourcePollers = m.runningResourcePollers.Load()
 	metrics.ResourcePollCount = m.resourcePollCount.Load()
 	metrics.ResourceReplyCount = m.resourceReplyCount.Load()
@@ -405,11 +405,11 @@ func (m *mdnsWatcher) metrics() Metrics {
 
 	metrics := Metrics{}
 	m.services.fillMetrics(&metrics)
-	
+
 	for _, e := range m.entities {
 		e.fillMetrics(&metrics)
 	}
-	
+
 	m.stats.fillMetrics(&metrics)
 
 	return metrics
