@@ -128,7 +128,7 @@ func (m *mdnsWatcher) removeStaleJunkOnce() {
 	m.Lock()
 	defer m.Unlock()
 
-	removed := m.services.removeStaleJunk(30 * time.Minute)
+	removed := m.services.removeStaleJunk(45 * time.Minute)
 	for _, svc := range removed {
 		fmt.Printf(" - %s\n", svc)
 		
@@ -223,7 +223,7 @@ func (m *mdnsService) removeStaleJunkOnce() {
 	defer m.Unlock()
 	
 	for k, v := range m.m {
-		if time.Since(v) > 15 * time.Minute {
+		if time.Since(v) > 25 * time.Minute {
 			fmt.Printf("-- %s\n", k.Name)
 			delete(m.m, k)
 		}
@@ -280,7 +280,7 @@ func (m *mdnsService) handleOneReply(e *mdns.ServiceEntry) {
 
 	_, exists := m.m[ds]
 	if !exists {
-		fmt.Printf("++ (%s) %s\n", m.name, e.Name)
+		fmt.Printf("++ (%s) %s @ %v\n", m.name, e.Name, e.TTL)
 	}
 	
 	m.m[ds] = time.Now()

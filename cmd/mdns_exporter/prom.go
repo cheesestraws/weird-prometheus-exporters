@@ -5,6 +5,6 @@ type Service struct {
 	Desc string `prometheus_label:"description"`
 }
 
-type Output struct {
+type Metrics struct {
 	ServiceLastSeen map[Service]int `prometheus_map:"service_last_seen"`
 }
