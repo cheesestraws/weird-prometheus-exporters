@@ -10,7 +10,7 @@ require (
 
 require (
 	github.com/cheesestraws/mdns v0.0.0-20260318234233-a2679ed18174 // indirect
-	github.com/eclipse/paho.mqtt.golang v1.5.0 // indirect
+	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/mdns v1.0.6 // indirect
