@@ -274,7 +274,7 @@ func (m *mdnsService) removeStaleJunkOnce() {
 }
 
 func (m *mdnsService) removeStaleJunk(ctx context.Context) {
-	t := time.NewTicker(1 * time.Minute)
+	t := time.NewTicker(10 * time.Minute)
 	for {
 		select {
 		case <-ctx.Done():
