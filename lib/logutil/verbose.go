@@ -18,6 +18,10 @@ func Verbosef(format string, args ...any) {
 	Verbose(fmt.Sprintf(format, args...))
 }
 
+func MakeVerbose() {
+	*verbose = true
+}
+
 func init() {
 	verbose = flag.Bool("v", false, "verbose logging")
 }
