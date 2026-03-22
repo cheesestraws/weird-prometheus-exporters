@@ -38,9 +38,9 @@ func getBody() []byte {
 	bs := m.Marshal(metrics, map[string]string{
 		"base_url": *baseURL,
 	})
-	
-	bs = append(bs, metrics.DynamicMetrics.PromBytes(*prefix + "evt_", *baseURL)...)
-	
+
+	bs = append(bs, metrics.DynamicMetrics.PromBytes(*prefix+"evt_", *baseURL)...)
+
 	return bs
 }
 
@@ -72,12 +72,12 @@ func main() {
 	addr = flag.String("addr", ":9414", "address to listen on")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
 	flag.Parse()
-	
+
 	log.SetOutput(logWriter{})
-	
+
 	go fetchMetadata(*baseURL)
 	go streamEvents(*baseURL)
 	go flushOldCrap()
 
-	serve(*addr)	
+	serve(*addr)
 }

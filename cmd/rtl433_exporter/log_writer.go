@@ -6,7 +6,7 @@ import (
 )
 
 // a Writer that filters out annoying error messages
-type logWriter struct {}
+type logWriter struct{}
 
 func (l logWriter) Write(buf []byte) (int, error) {
 	// "Unsolicited response received on idle HTTP channel" is due to some

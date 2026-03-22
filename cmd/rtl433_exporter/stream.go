@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+var alwaysLabelsRegardlessOfType map[string]struct{} = map[string]struct{}{
+	"id":      struct{}{},
+	"channel": struct{}{},
+}
+
 func streamEvents(baseURL string) {
 	url, err := url.JoinPath(baseURL, "/stream")
 	if err != nil {
@@ -78,12 +83,12 @@ func handleLine(mm map[string]JSONNumberOrString) error {
 			return nil
 		}
 	}
-	
+
 	// messages from entities have a model and time; anything else,
 	// ignore
 	_, hasTime := mm["time"]
 	_, hasModel := mm["model"]
-	
+
 	if !hasTime || !hasModel {
 		log.Printf("unexpecyed: %+v", mm)
 		return nil
@@ -98,7 +103,9 @@ func handleLine(mm map[string]JSONNumberOrString) error {
 	labelSet := make(map[string]string)
 	metricSet := make(map[string]float64)
 	for k, v := range fields {
-		if v.IsNumber {
+		if _, ok := alwaysLabelsRegardlessOfType[k]; ok {
+			labelSet[k] = v.LabelString()
+		} else if v.IsNumber {
 			metricSet[k] = v.Number
 		} else if v.IsString {
 			labelSet[k] = v.String
@@ -117,6 +124,6 @@ func handleLine(mm map[string]JSONNumberOrString) error {
 func registerMetric(labels map[string]string, values map[string]float64) {
 	metrics.Lock()
 	defer metrics.Unlock()
-	
+
 	metrics.DynamicMetrics.Observe(labels, values)
 }

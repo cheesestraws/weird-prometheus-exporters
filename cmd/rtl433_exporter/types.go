@@ -13,11 +13,11 @@ import (
 
 type JSONNumberOrString struct {
 	IsNumber bool
-    Number float64
-    IsString bool
-    String string
-    
-    IsOther bool
+	Number   float64
+	IsString bool
+	String   string
+
+	IsOther bool
 }
 
 func (j *JSONNumberOrString) UnmarshalJSON(b []byte) error {
@@ -28,17 +28,27 @@ func (j *JSONNumberOrString) UnmarshalJSON(b []byte) error {
 		j.IsNumber = true
 		return nil
 	}
-	
+
 	err = json.Unmarshal(b, &j.String)
 	if err == nil {
 		j.IsString = true
 		j.IsNumber = false
 		return nil
 	}
-	
+
 	j.IsOther = true
-	
+
 	return nil
+}
+
+func (j *JSONNumberOrString) LabelString() string {
+	if j.IsString {
+		return j.String
+	} else if j.IsNumber {
+		return fmt.Sprintf("%v", j.Number)
+	} else {
+		return "<other>"
+	}
 }
 
 type RPCDeviceInfo struct {
@@ -88,56 +98,56 @@ func metadataRPCToProm(devs RPCDeviceInfo, meta RPCMeta) PromMetadata {
 type LabelSet string
 type DynamicSensorMetrics struct {
 	LastSeen time.Time
-	Metrics map[string]float64
+	Metrics  map[string]float64
 }
 
 type AllDynamicSensorMetrics struct {
-	Metrics map[LabelSet]DynamicSensorMetrics
+	Metrics      map[LabelSet]DynamicSensorMetrics
 	Observations map[LabelSet]uint64
 }
 
 func (a *AllDynamicSensorMetrics) Observe(labels map[string]string, metrics map[string]float64) {
-	if a.Metrics == nil {	
+	if a.Metrics == nil {
 		// lazily initialise map if we need to
 		a.Metrics = make(map[LabelSet]DynamicSensorMetrics)
 	}
-	
+
 	if a.Observations == nil {
 		a.Observations = make(map[LabelSet]uint64)
 	}
-	
+
 	var ll []string
 	for k, v := range labels {
 		ll = append(ll, fmt.Sprintf("%s=%q", k, v))
 	}
 	slices.Sort(ll)
-	
+
 	ls := strings.Join(ll, ",")
-	
+
 	dsm := DynamicSensorMetrics{
 		LastSeen: time.Now(),
-		Metrics: maps.Clone(metrics),
+		Metrics:  maps.Clone(metrics),
 	}
-	
+
 	a.Metrics[LabelSet(ls)] = dsm
 	a.Observations[LabelSet(ls)]++
 }
 
 func (a *AllDynamicSensorMetrics) PromBytes(prefix string, baseURL string) []byte {
 	var accum bytes.Buffer
-	
+
 	for labels, dsm := range a.Metrics {
-		fmt.Fprintf(&accum, prefix + "timestamp{base_url=\"%s\",%s} %d\n", baseURL, labels, dsm.LastSeen.Unix())
+		fmt.Fprintf(&accum, prefix+"timestamp{base_url=\"%s\",%s} %d\n", baseURL, labels, dsm.LastSeen.Unix())
 		for k, v := range dsm.Metrics {
-			fmt.Fprintf(&accum, prefix + "%s{base_url=\"%s\",%s} %v\n", k, baseURL, labels, v)
+			fmt.Fprintf(&accum, prefix+"%s{base_url=\"%s\",%s} %v\n", k, baseURL, labels, v)
 		}
-		
+
 		count, ok := a.Observations[labels]
 		if ok {
-			fmt.Fprintf(&accum, prefix + "event_count{base_url=\"%s\",%s} %d\n", baseURL, labels, count)
+			fmt.Fprintf(&accum, prefix+"event_count{base_url=\"%s\",%s} %d\n", baseURL, labels, count)
 		}
 	}
-	
+
 	return accum.Bytes()
 }
 
@@ -145,7 +155,7 @@ func (a *AllDynamicSensorMetrics) FlushOldCrap(timeout time.Duration) {
 	if a.Metrics == nil {
 		return
 	}
-	
+
 	for labels, dsm := range a.Metrics {
 		if time.Since(dsm.LastSeen) > timeout {
 			delete(a.Metrics, labels)
@@ -160,9 +170,9 @@ type Metrics struct {
 	MetadataValid         int                  `prometheus:"metadata_valid"`
 	MetadataPollSuccesses int                  `prometheus:"metadata_poll_success_count"`
 	MetadataPollFailures  int                  `prometheus:"metadata_poll_failure_count"`
-	
+
 	StreamConnectionUp int `prometheus:"stream_connection_up"`
-	
-	DynamicMetrics AllDynamicSensorMetrics
+
+	DynamicMetrics         AllDynamicSensorMetrics
 	LastDynamicMetricFlush int64 `prometheus:"last_dynamic_metric_flush"`
 }
