@@ -90,7 +90,7 @@ func handleLine(mm map[string]JSONNumberOrString) error {
 	_, hasModel := mm["model"]
 
 	if !hasTime || !hasModel {
-		log.Printf("unexpecyed: %+v", mm)
+		log.Printf("unexpected: %+v", mm)
 		return nil
 	}
 
