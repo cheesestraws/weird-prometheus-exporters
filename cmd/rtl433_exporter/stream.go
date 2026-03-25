@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	
+	"github.com/cheesestraws/weird-prometheus-exporters/lib/rflookup"
 )
 
 var alwaysLabelsRegardlessOfType map[string]struct{} = map[string]struct{}{
@@ -111,6 +113,10 @@ func handleLine(mm map[string]JSONNumberOrString) error {
 			labelSet[k] = v.String
 		}
 	}
+	
+	if (*useRFLookup) {
+		handleRFLookup(labelSet)
+	}
 
 	registerMetric(labelSet, metricSet)
 
@@ -119,6 +125,34 @@ func handleLine(mm map[string]JSONNumberOrString) error {
 	}
 
 	return nil
+}
+
+func handleRFLookup(labelset map[string]string) {
+	// Do we have metadata yet?
+	centreFrequency := metrics.GetMetadata().CentreFrequency
+	if centreFrequency == 0 {
+		return
+	}
+	
+	rflookupName, err := rflookup.MkLookupHostname(labelset, centreFrequency)
+	if err != nil {
+		metrics.Lock()
+		metrics.RFLookupErrors++
+		metrics.Unlock()
+		log.Printf("rflookup MkLookupHostname: $v", err)
+		return
+	}
+	
+	labelset["rflookup"] = rflookupName
+	
+	cname, err := rflookup.Lookup(labelset, centreFrequency)
+	if err == nil {
+		labelset["rflookup_friendly"] = cname
+	} else {
+		metrics.Lock()
+		metrics.RFLookupErrors++
+		metrics.Unlock()
+	}
 }
 
 func registerMetric(labels map[string]string, values map[string]float64) {
