@@ -12,6 +12,7 @@ import (
 var prefix *string
 var addr *string
 var dump *bool
+var locationFeatures *bool
 
 func produceMetricsBody() []byte {
 	m := declprom.Marshaller{
@@ -29,9 +30,9 @@ func produceMetricsBody() []byte {
 func serve(addr string) {
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
-		
+
 		body := produceMetricsBody()
-		
+
 		if *dump {
 			log.Printf("%s", body)
 		}
@@ -54,6 +55,8 @@ func main() {
 	prefix = flag.String("prefix", "findmy_", "prefix for metric names")
 	addr = flag.String("addr", ":9405", "address to listen on")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
+	locationFeatures = flag.Bool("yes-i-want-features-with-dubious-privacy-implications", false, "enable location-based data")
+
 	flag.Parse()
 
 	// check we're good to go
