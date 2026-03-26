@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/declprom"
 )
@@ -13,6 +14,9 @@ var prefix *string
 var addr *string
 var dump *bool
 var locationFeatures *bool
+var homeAddressRegex *string
+
+var homeAddressMatcher *regexp.Regexp
 
 func produceMetricsBody() []byte {
 	m := declprom.Marshaller{
@@ -56,8 +60,11 @@ func main() {
 	addr = flag.String("addr", ":9405", "address to listen on")
 	dump = flag.Bool("d", false, "dump metrics to stdout as well as http")
 	locationFeatures = flag.Bool("yes-i-want-features-with-dubious-privacy-implications", false, "enable location-based data")
+	homeAddressRegex = flag.String("home-address-re", "", "regex to match against address to see if we're home")
 
 	flag.Parse()
+	
+	homeAddressMatcher = regexp.MustCompile(*homeAddressRegex)
 
 	// check we're good to go
 	warnForUntestedVersions()
