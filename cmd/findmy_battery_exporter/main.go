@@ -63,7 +63,7 @@ func main() {
 	homeAddressRegex = flag.String("home-address-re", "", "regex to match against address to see if we're home")
 
 	flag.Parse()
-	
+
 	homeAddressMatcher = regexp.MustCompile(*homeAddressRegex)
 
 	// check we're good to go

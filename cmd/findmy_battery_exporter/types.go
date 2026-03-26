@@ -13,6 +13,11 @@ type Device struct {
 	DeviceStatus      string
 	ThisDevice        bool
 	IsMac             bool
+	Address           GeoAddress
+}
+
+type GeoAddress struct {
+	FullAddress string `json:"mapItemFullAddress"`
 }
 
 // A Dev is a key for a map of device data
@@ -22,6 +27,7 @@ type Dev struct {
 	ThisDevice        bool   `prometheus_label:"exporting_device"`
 	IsMac             bool   `prometheus_label:"is_mac"`
 	DeviceDiscoveryID string `prometheus_label:"device_discovery_id"`
+	AtHome            bool   `prometheus_label:"at_home"`
 }
 
 type DeviceMetrics struct {
@@ -48,6 +54,8 @@ func deviceMetricsFromDevices(ds []Device) DeviceMetrics {
 			DeviceDiscoveryID: v.DeviceDiscoveryID,
 		}
 
+		addLocationFeatures(v, &dev)
+
 		// Online is a wild guess
 		if v.DeviceStatus == "200" {
 			d.Online[dev] = 1
@@ -73,4 +81,14 @@ func deviceMetricsFromDevices(ds []Device) DeviceMetrics {
 	}
 
 	return d
+}
+
+func addLocationFeatures(v Device, dev *Dev) {
+	// Only do location magic if user is feeling silly
+	if *locationFeatures {
+		// Does home address match the regex?
+		if v.Address.FullAddress != "" && *homeAddressRegex != "" {
+			dev.AtHome = homeAddressMatcher.MatchString(v.Address.FullAddress)
+		}
+	}
 }
