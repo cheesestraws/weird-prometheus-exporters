@@ -175,14 +175,17 @@ type Metrics struct {
 
 	DynamicMetrics         AllDynamicSensorMetrics
 	LastDynamicMetricFlush int64 `prometheus:"last_dynamic_metric_flush"`
-	
-	RFLookupErrors int `prometheus:"rflookup_errors"`
+
+	RFLookupTotal     int `prometheus:"rflookup_total"`
+	RFLookupErrors    int `prometheus:"rflookup_errors"`
+	RFLookupAnonymous int `prometheus:"rflookup_anonymous"`
+	RFLookupHits      int `prometheus:"rflookup_hits"`
 }
 
 func (m *Metrics) GetMetadata() PromMetadata {
 	m.Lock()
 	defer m.Unlock()
-	
+
 	for k := range m.Metadata {
 		return k
 	}

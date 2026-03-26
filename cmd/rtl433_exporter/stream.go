@@ -8,8 +8,9 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
-	
+
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/rflookup"
 )
 
@@ -113,8 +114,8 @@ func handleLine(mm map[string]JSONNumberOrString) error {
 			labelSet[k] = v.String
 		}
 	}
-	
-	if (*useRFLookup) {
+
+	if *useRFLookup {
 		handleRFLookup(labelSet)
 	}
 
@@ -133,7 +134,7 @@ func handleRFLookup(labelset map[string]string) {
 	if centreFrequency == 0 {
 		return
 	}
-	
+
 	rflookupName, err := rflookup.MkLookupHostname(labelset, centreFrequency)
 	if err != nil {
 		metrics.Lock()
@@ -142,16 +143,29 @@ func handleRFLookup(labelset map[string]string) {
 		log.Printf("rflookup MkLookupHostname: $v", err)
 		return
 	}
-	
+
 	labelset["rflookup"] = rflookupName
-	
+
+	metrics.Lock()
+	metrics.RFLookupTotal++
+	metrics.Unlock()
+
 	cname, err := rflookup.Lookup(labelset, centreFrequency)
 	if err == nil {
+		metrics.Lock()
+		metrics.RFLookupHits++
+		metrics.Unlock()
+
 		labelset["rflookup_friendly"] = cname
+	} else if err != nil && strings.Contains(err.Error(), "no such host") {
+		metrics.Lock()
+		metrics.RFLookupAnonymous++
+		metrics.Unlock()
 	} else {
 		metrics.Lock()
 		metrics.RFLookupErrors++
 		metrics.Unlock()
+		log.Printf("rflookup Lookup: %v", err)
 	}
 }
 
