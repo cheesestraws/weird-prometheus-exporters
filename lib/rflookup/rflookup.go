@@ -64,11 +64,10 @@ func Lookup(labelset map[string]string, centreFrequency int) (string, error) {
 		return "", err
 	}
 
-	r := net.Resolver{}
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	hn, err := r.LookupCNAME(ctx, fqdn)
+	hn, err := net.DefaultResolver.LookupCNAME(ctx, fqdn)
 	if err != nil {
 		return hn, err
 	}
