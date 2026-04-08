@@ -8,6 +8,8 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -74,6 +76,56 @@ func handleConn(c io.ReadCloser) error {
 	return nil
 }
 
+var autoLevelRegexp = regexp.MustCompile(`Estimated noise level is (-?[0-9\.]+) dB, adjusting minimum detection level to (-?[0-9\.]+) dB`)
+func handleAutoLevelLine(mm map[string]JSONNumberOrString) bool {
+	src, hasSrc := mm["src"]
+	if !hasSrc {
+		return false
+	}
+	
+	if !src.IsString {
+		return false
+	}
+	
+	if src.String != "Auto Level" {
+		return false
+	}
+	
+	msg, hasMsg := mm["msg"]
+	if !hasMsg {
+		return false
+	}
+	
+	if !msg.IsString {
+		return false
+	}
+	
+	ss := autoLevelRegexp.FindStringSubmatch(mm["msg"].String)
+	if len(ss) < 3 {
+		return false
+	}
+	
+	noise, err := strconv.ParseFloat(ss[1], 64)
+	if err != nil {
+		log.Printf(`error parsing line "%+v": %s should have been a number`, mm, ss[1])
+		return false
+	}
+	
+	sens, err := strconv.ParseFloat(ss[2], 64)
+	if err != nil {
+		log.Printf(`error parsing line "%+v": %s should have been a number`, mm, ss[2])
+		return false
+	}
+
+	metrics.Lock()
+	defer metrics.Unlock()
+	
+	metrics.EstimatedNoiseLevel = noise
+	metrics.MinimumDetectionLevel = sens
+	
+	return true
+}
+
 func handleLine(mm map[string]JSONNumberOrString) error {
 	// Check that our attributes only contain numbers and strings
 	for _, val := range mm {
@@ -85,6 +137,11 @@ func handleLine(mm map[string]JSONNumberOrString) error {
 			log.Printf("got unexpected field type; errant stats request?")
 			return nil
 		}
+	}
+
+	// Auto level log messages are their own beasts and are a bit icky
+	if handleAutoLevelLine(mm) {
+		return nil
 	}
 
 	// messages from entities have a model and time; anything else,

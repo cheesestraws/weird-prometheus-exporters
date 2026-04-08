@@ -170,6 +170,9 @@ type Metrics struct {
 	MetadataValid         int                  `prometheus:"metadata_valid"`
 	MetadataPollSuccesses int                  `prometheus:"metadata_poll_success_count"`
 	MetadataPollFailures  int                  `prometheus:"metadata_poll_failure_count"`
+	
+	EstimatedNoiseLevel float64 `prometheus:"estimated_noise_level"`
+	MinimumDetectionLevel float64 `prometheus:"minimum_detection_level"`
 
 	StreamConnectionUp int `prometheus:"stream_connection_up"`
 
