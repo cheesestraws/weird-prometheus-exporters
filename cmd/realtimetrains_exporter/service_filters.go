@@ -5,7 +5,7 @@ import (
 
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/fn"
 
-	rtt "github.com/cheesestraws/gortt"
+	rtt "codeberg.org/cheesestraws/gortt"
 )
 
 func (ss WrappedServices) ByTimeWindow(from time.Time, to time.Time) WrappedServices {

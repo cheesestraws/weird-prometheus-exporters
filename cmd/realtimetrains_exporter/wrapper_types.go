@@ -7,7 +7,7 @@ import (
 
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/fn"
 
-	rtt "github.com/cheesestraws/gortt"
+	rtt "codeberg.org/cheesestraws/gortt"
 )
 
 type WrappedService struct {

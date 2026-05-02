@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	rtt "github.com/cheesestraws/gortt"
+	rtt "codeberg.org/cheesestraws/gortt"
 )
 
 var state struct {

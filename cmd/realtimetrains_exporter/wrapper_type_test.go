@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	rtt "github.com/cheesestraws/gortt"
+	rtt "codeberg.org/cheesestraws/gortt"
 )
 
 func TestLocationLineupToServices(t *testing.T) {

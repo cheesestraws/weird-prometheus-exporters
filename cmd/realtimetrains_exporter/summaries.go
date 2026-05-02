@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	rtt "github.com/cheesestraws/gortt"
+	rtt "codeberg.org/cheesestraws/gortt"
 )
 
 type Summaries struct {

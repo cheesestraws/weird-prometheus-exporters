@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	codeberg.org/cheesestraws/gortt v0.0.0-20260502230747-ace5356b864d // indirect
 	github.com/cheesestraws/mdns v0.0.0-20260318234233-a2679ed18174 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

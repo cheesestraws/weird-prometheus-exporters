@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	rtt "github.com/cheesestraws/gortt"
+	rtt "codeberg.org/cheesestraws/gortt"
 
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/fn"
 )
