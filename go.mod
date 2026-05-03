@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	codeberg.org/cheesestraws/mdns v0.0.0-20260503133633-00beaf4bf8c1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/miekg/dns v1.1.72 // indirect

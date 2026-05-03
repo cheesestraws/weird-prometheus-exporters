@@ -1,5 +1,7 @@
 codeberg.org/cheesestraws/gortt v0.0.0-20260502230747-ace5356b864d h1:xCDwy2kaDTeFi3496rP0c47nNKOVn4mMlU8sauMwEy0=
 codeberg.org/cheesestraws/gortt v0.0.0-20260502230747-ace5356b864d/go.mod h1:ny/DCDJYIEIzqcK7e0zJDmMbd2VwKxoEV1Fb/y/VJOg=
+codeberg.org/cheesestraws/mdns v0.0.0-20260503133633-00beaf4bf8c1 h1:jRUhFhBs9BEj24aPodFnUbfXaW9pJBHeLKTc36j6DrE=
+codeberg.org/cheesestraws/mdns v0.0.0-20260503133633-00beaf4bf8c1/go.mod h1:No9mGBIxjlAvNjMCR+dEjpWWDBhHsjL2wILDPJflICE=
 github.com/cheesestraws/mdns v0.0.0-20260318234233-a2679ed18174 h1:GNUn/AtmOBl986eN81X2GbUfI7tVCkkKMzTzMcCiELY=
 github.com/cheesestraws/mdns v0.0.0-20260318234233-a2679ed18174/go.mod h1:3sKcxfTdUOvC96HdP9aBpbf2Qri53TUja+kN+5vImVc=
 github.com/cheesestraws/scb v0.0.0-20240731224359-e29109e5981a h1:CI4AsRvFJJZjF48EikGhk4PfkSB3PhBmFbxtglBVobg=

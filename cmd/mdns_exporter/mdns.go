@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/cheesestraws/mdns"
+	"codeberg.org/cheesestraws/mdns"
 
 	"github.com/cheesestraws/weird-prometheus-exporters/lib/logutil"
 )
